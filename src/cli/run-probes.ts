@@ -25,6 +25,7 @@ import {
 import { buildBreakFirstTimeline } from "../lib/timeline";
 import { clearTelemetry } from "../lib/telemetry-logger";
 import type { ProbeConfig, FailureEvent } from "../types";
+import { inferProvider } from "../lib/llm-client";
 
 const OUTPUT_DIR = path.join(process.cwd(), "output");
 
@@ -105,13 +106,8 @@ async function main() {
     console.log(`🎯 Mode: ${mode.toUpperCase()}`);
     
     if (mode === "real") {
-      console.log("   ⚠️  Real API calls will be made to Gemini");
-      if (!process.env.GEMINI_API_KEY) {
-        console.error("\n❌ Error: GEMINI_API_KEY not found in environment");
-        console.error("   Please create a .env file with your API key");
-        console.error("   Example: GEMINI_API_KEY=your_key_here");
-        process.exit(1);
-      }
+      console.log("   ⚠️  Real API calls will be made to LLM providers");
+      // Validate API keys for required providers (check after configs load)
     } else {
       console.log("   Using simulated telemetry (no API calls)");
     }
@@ -130,6 +126,27 @@ async function main() {
     const prompts = loadPrompts("data/prompts/suite.json");
     console.log(`   Loaded ${configs.length} config(s): ${configs.map((c) => c.id).join(", ")}`);
     console.log(`   Loaded ${prompts.length} prompt(s)\n`);
+
+    // Validate API keys for real mode
+    if (mode === "real") {
+      const providers = new Set(configs.map((c) => inferProvider(c)));
+      const missing: string[] = [];
+      if (providers.has("openai") && !process.env.OPENAI_API_KEY) {
+        missing.push("OPENAI_API_KEY (for OpenAI models)");
+      }
+      if (providers.has("gemini") && !process.env.GEMINI_API_KEY_CH && !process.env.GEMINI_API_KEY) {
+        missing.push("GEMINI_API_KEY_CH or GEMINI_API_KEY (for Gemini models)");
+      }
+      if (providers.has("manus") && !process.env.MANUS_API_KEY_CH && !process.env.MANUS_API_KEY) {
+        missing.push("MANUS_API_KEY_CH or MANUS_API_KEY (for Manus models)");
+      }
+      if (missing.length > 0) {
+        console.error("\n❌ Error: Missing API keys for real mode");
+        console.error(`   Required: ${missing.join(", ")}`);
+        console.error("   Add keys to .env file (see .env.example)");
+        process.exit(1);
+      }
+    }
 
     // Create config map for enhanced rules
     const configMap = new Map<string, ProbeConfig>();

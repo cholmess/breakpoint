@@ -3,9 +3,13 @@
  * Person A: Runner + Rules Engineer
  */
 
+/** LLM provider for real API calls */
+export type LLMProvider = "openai" | "gemini" | "manus";
+
 export interface ProbeConfig {
   id: string;
   model: string;
+  provider?: LLMProvider; // Optional: inferred from model if not set (gpt-* -> openai, gemini-* -> gemini)
   context_window: number;
   top_k: number;
   chunk_size: number;

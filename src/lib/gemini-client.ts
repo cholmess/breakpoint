@@ -10,11 +10,11 @@ import type { ProbeConfig, PromptRecord, TelemetryRecord } from "../types";
  * Initialize Gemini client with API key from environment
  */
 export function initGeminiClient(): GoogleGenerativeAI {
-  const apiKey = process.env.GEMINI_API_KEY;
-  
+  const apiKey = process.env.GEMINI_API_KEY_CH || process.env.GEMINI_API_KEY;
+
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY not found in environment. Please set it in .env file."
+      "GEMINI_API_KEY_CH or GEMINI_API_KEY not found in environment. Please set it in .env file."
     );
   }
   
