@@ -41,12 +41,14 @@ export async function POST(req: NextRequest) {
       configA,
       configB,
       promptFamily,
+      runSize = "full",
       seed = 42,
       mode = "simulate",
     }: {
       configA: ProbeConfig;
       configB: ProbeConfig;
       promptFamily?: string;
+      runSize?: "quick" | "full";
       seed?: number;
       mode?: "simulate" | "real";
     } = body;
@@ -105,6 +107,10 @@ export async function POST(req: NextRequest) {
     const filtered = filterPromptsByFamily(prompts, promptFamily || "all");
     // If filter matched no family (e.g. UI sent "long-context" but suite has "short_plain"), use all prompts
     prompts = filtered.length > 0 ? filtered : prompts;
+    // Quick run: 20 prompts for demo-friendly real mode (~40 probes, ~30-60s)
+    if (runSize === "quick") {
+      prompts = prompts.slice(0, 20);
+    }
     if (prompts.length === 0) {
       return NextResponse.json(
         { error: "No prompts to run (check prompt suite path)" },

@@ -53,7 +53,7 @@ export function setMode(mode: ExecutionMode): void {
   
   // Initialize rate limiter for real mode
   if (mode === "real" && !rateLimiter) {
-    rateLimiter = new RateLimiter(5, 200); // Max 5 concurrent, 200ms between calls
+    rateLimiter = new RateLimiter(10, 100); // Max 10 concurrent, 100ms between calls - keeps demos fast
   }
 }
 
