@@ -15,6 +15,7 @@ import {
 import type { FailureEvent } from "../types";
 
 const OUTPUT_DIR = path.join(process.cwd(), "output");
+const CONFIG_IDS_PATH = path.join(process.cwd(), "output", "config-ids.json");
 const FAILURE_EVENTS_PATHS = [
   path.join(process.cwd(), "output", "failure-events.json"),
   path.join(process.cwd(), "tests", "fixtures", "failure-events.json"),
@@ -59,6 +60,23 @@ function loadPromptsForAnalysis(): ReturnType<typeof loadPrompts> {
   return [];
 }
 
+/** Load optional config IDs so configs with 0 failures are included in analysis. */
+function loadConfigIds(): string[] | undefined {
+  if (!fs.existsSync(CONFIG_IDS_PATH)) return undefined;
+  try {
+    const content = fs.readFileSync(CONFIG_IDS_PATH, "utf-8");
+    const data = JSON.parse(content);
+    const ids = Array.isArray(data) ? data : (data.config_ids ?? data.configIds ?? []);
+    if (ids.length > 0) {
+      console.log(`   Loaded ${ids.length} config ID(s) from output/config-ids.json (0-failure configs will be included).`);
+      return ids as string[];
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
 function main(): void {
   console.log("📊 Person B - Probability & Analytics Pipeline\n");
 
@@ -78,7 +96,8 @@ function main(): void {
     }
 
     console.log("🔬 Running analysis...");
-    const analysisOutput = runAnalysis(events, prompts);
+    const allConfigIds = loadConfigIds();
+    const analysisOutput = runAnalysis(events, prompts, allConfigIds);
     const statsList = Object.values(analysisOutput.configs);
     const comparisonsOutput = runComparisons(statsList);
     const distributionsOutput = runDistributions(events, prompts);
