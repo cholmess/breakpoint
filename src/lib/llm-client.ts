@@ -28,7 +28,9 @@ export function inferProvider(config: ProbeConfig): ProviderType {
   if (model.startsWith("manus-")) {
     return "manus";
   }
-  return "gemini";
+  throw new Error(
+    `Unknown model provider for: ${config.model ?? "(empty)"}. Set 'provider' explicitly (openai, gemini, or manus).`
+  );
 }
 
 /**

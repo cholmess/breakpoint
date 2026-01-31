@@ -18,7 +18,8 @@ const COST_THRESHOLD_DAILY = 100; // $100 per day (assuming ~1000 probes/day)
 const RETRIEVAL_NOISE_THRESHOLD = 8; // top_k > 8 considered noisy
 
 /**
- * Get default rules for failure detection
+ * Get default rules for failure detection.
+ * @deprecated Use getEnhancedRules(configs) instead for config-aware rules (context_window, top_k, etc.).
  */
 export function getDefaultRules(): Rule[] {
   return [
@@ -27,7 +28,6 @@ export function getDefaultRules(): Rule[] {
       name: "Context Overflow",
       condition: (result: ProbeResult) => {
         // Simplified version - uses heuristic since we don't have config access
-        // This function is kept for compatibility but getEnhancedRules should be used instead
         const totalInputTokens =
           result.telemetry.prompt_tokens + result.telemetry.retrieved_tokens;
         // Heuristic: assume default context window of 8192
