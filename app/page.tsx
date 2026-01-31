@@ -12,6 +12,7 @@ import { ResultsSummary } from "@/components/results-summary";
 import { Activity, Zap, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 // Default configs matching the schema
@@ -283,7 +284,7 @@ export default function Dashboard() {
                     comparisons={comparisonsData?.comparisons || []}
                     selectedConfigA={(simulatedConfigA || configA).id}
                     selectedConfigB={(simulatedConfigB || configB).id}
-                    isRunning={status === "running"}
+                    isRunning={false}
                   />
                   {analysisData && (
                     <ConfidenceBand analysisData={analysisData} />
