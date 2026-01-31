@@ -50,15 +50,27 @@ export async function callOpenAIAPI(
       throw new Error("No usage metadata returned from API");
     }
 
+    const toolCallsCount = response.choices[0]?.message?.tool_calls?.length || 0;
+    
+    // Estimate retrieved tokens for RAG scenarios
+    const retrievedTokens = 
+      (prompt.expects_citations || prompt.family?.includes("doc_grounded"))
+        ? Math.floor(config.top_k * config.chunk_size * 0.8)
+        : 0;
+    
+    // Infer tool timeouts from high latency (>10s) when tools are used
+    // APIs don't expose per-tool timeout, so we infer from overall latency
+    const toolTimeouts = (toolCallsCount > 0 && latencyMs > 10000) ? 1 : 0;
+
     const telemetry: TelemetryRecord = {
       prompt_id: prompt.id,
       config_id: config.id,
       prompt_tokens: usage.prompt_tokens || 0,
-      retrieved_tokens: 0, // OpenAI doesn't expose RAG retrieval tokens separately
+      retrieved_tokens: retrievedTokens,
       completion_tokens: usage.completion_tokens || 0,
       latency_ms: latencyMs,
-      tool_calls: response.choices[0]?.message?.tool_calls?.length || 0,
-      tool_timeouts: 0,
+      tool_calls: toolCallsCount,
+      tool_timeouts: toolTimeouts,
       timestamp: new Date().toISOString(),
     };
 

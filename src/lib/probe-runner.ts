@@ -10,6 +10,7 @@ import type {
   PromptRecord,
   ProbeResult,
   TelemetryRecord,
+  FailureMode,
 } from "../types";
 import { logTelemetry } from "./telemetry-logger";
 import { callLLM } from "./llm-client";
@@ -224,6 +225,9 @@ const CONTEXT_USAGE_BREACH = 0.85;
 // so configs with insane context actually see fewer context-related failures.
 const CONTEXT_AT_RISK_MAX = 256 * 1024; // 256k tokens
 
+/** Latency threshold used by rules-engine for latency_breach (must match). */
+const LATENCY_SLO_MS = 15000;
+
 /**
  * Get model-specific latency parameters for realistic simulation.
  * Token multiplier is kept small (ms per token) so typical simulated requests stay under 2800ms.
@@ -257,13 +261,27 @@ function getModelLatencyProfile(model: string): { baseMin: number; baseMax: numb
 }
 
 /**
+ * All six failure modes so we can guarantee at least one of each in simulate (Problem 5).
+ */
+const ALL_FAILURE_MODES: FailureMode[] = [
+  "context_overflow",
+  "silent_truncation_risk",
+  "latency_breach",
+  "cost_runaway",
+  "tool_timeout_risk",
+  "retrieval_noise_risk",
+];
+
+/**
  * Generate realistic telemetry based on config and prompt.
  * Simulates multiple failure modes so failure rate varies by config (not just 0% or 5%).
  * Uses model-specific variance for realistic behavior.
+ * When forceFailureMode is set (simulate demo mix), telemetry is shaped so that rule fires.
  */
 function generateTelemetry(
   config: ProbeConfig,
-  prompt: PromptRecord
+  prompt: PromptRecord,
+  forceFailureMode?: FailureMode
 ): TelemetryRecord {
   const promptTokens = estimateTokens(prompt.prompt);
   const latencyProfile = getModelLatencyProfile(config.model);
@@ -311,83 +329,128 @@ function generateTelemetry(
   const rollContextOverflow = seededRandom();
   const rollCost = seededRandom();
 
-  // Simulation mode: never artificially create latency breaches.
-  // Synthetic latency is not meaningful; avoid misleading "Latency Breach" dominance.
-  // Formula keeps all requests under 2800ms so context/truncation/cost failures can surface.
-  const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
-  const tokenLatency =
-    (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
-  const latencyMs = Math.floor(
-    Math.min(
-      baseLatency + tokenLatency + seededRandom() * 400,
-      2800 // Cap at 2800ms - well below the 15s real-API threshold
-    )
-  );
-
-  // ~5% chance: push total input tokens over context_window (context_overflow rule).
-  // Ensures simulation can trigger context_overflow, not only latency_breach.
-  const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
-  if (contextAtRisk && rollContextOverflow < 0.05) {
-    const overflowAmount = Math.floor(100 + seededRandom() * 500);
-    const minInputForOverflow = config.context_window + overflowAmount;
-    const currentInput = promptTokens + retrievedTokens;
-    if (minInputForOverflow > currentInput) {
-      retrievedTokens = Math.max(0, minInputForOverflow - promptTokens);
-    }
-  }
-
-  // ~8% chance: push context usage over 0.85 (silent truncation rule).
-  // Only apply when context_window is "at risk" (not huge). With huge context,
-  // we skip this so configs with insane tokens actually see fewer context-related failures.
-  if (contextAtRisk && rollContext < 0.08) {
-    const needed =
-      Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
-      promptTokens;
-    if (needed > 0) {
-      retrievedTokens = Math.max(retrievedTokens, needed);
-    }
-  }
-
-  // ~5% chance: cost runaway (rule: estimated_cost > 0.10 per probe)
-  const totalSoFar = promptTokens + retrievedTokens + completionTokens;
-  const minTokensForCostBreach = Math.ceil(
-    (COST_BREACH_PER_PROBE * 1000) / config.cost_per_1k_tokens
-  );
-  if (rollCost < 0.05 && minTokensForCostBreach > totalSoFar) {
-    const extra = minTokensForCostBreach - totalSoFar + 100;
-    completionTokens = Math.min(
-      completionTokens + extra,
-      config.max_output_tokens
+  // Simulation mode: keep latency under 15s unless we're forcing latency_breach (demo mix).
+  let latencyMs: number;
+  if (forceFailureMode === "latency_breach") {
+    latencyMs = LATENCY_SLO_MS + 1000; // Over threshold so rule fires
+  } else {
+    const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
+    const tokenLatency =
+      (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
+    latencyMs = Math.floor(
+      Math.min(
+        baseLatency + tokenLatency + seededRandom() * 400,
+        2800 // Cap - well below 15s so other failure modes can surface
+      )
     );
   }
 
-  // Simulate tool calls and timeouts with realistic distribution
+  const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
+
   let toolCalls = 0;
   let toolTimeouts = 0;
-  if (config.tools_enabled && prompt.expects_tools) {
-    // More realistic tool call distribution based on prompt complexity
-    // Simple prompts: 1-2 calls, complex prompts: 2-8 calls
-    const isComplexPrompt = prompt.family.includes("long") || 
-                           prompt.family.includes("doc_grounded") ||
-                           promptTokens > 500;
-    
-    if (isComplexPrompt) {
-      // Complex: 2-8 tool calls with bias toward 3-5
-      const roll = seededRandom();
-      if (roll < 0.6) {
-        toolCalls = Math.floor(3 + seededRandom() * 3); // 3-5 (60%)
-      } else {
-        toolCalls = Math.floor(2 + seededRandom() * 7); // 2-8 (40%)
+
+  // Forced demo mix: shape telemetry so this probe triggers the requested failure mode
+  if (forceFailureMode) {
+    switch (forceFailureMode) {
+      case "context_overflow": {
+        const overflowAmount = Math.floor(100 + seededRandom() * 500);
+        retrievedTokens = Math.max(
+          retrievedTokens,
+          config.context_window + overflowAmount - promptTokens
+        );
+        break;
       }
-    } else {
-      // Simple: 1-3 tool calls, mostly 1-2
-      toolCalls = Math.floor(1 + seededRandom() * (seededRandom() < 0.7 ? 2 : 3));
+      case "silent_truncation_risk": {
+        const needed = Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) - promptTokens;
+        if (needed > 0) retrievedTokens = Math.max(retrievedTokens, needed);
+        break;
+      }
+      case "cost_runaway": {
+        const minTokensForCostBreach = Math.ceil(
+          (COST_BREACH_PER_PROBE * 1000) / config.cost_per_1k_tokens
+        );
+        const totalSoFar = promptTokens + retrievedTokens + completionTokens;
+        if (minTokensForCostBreach > totalSoFar) {
+          const extra = minTokensForCostBreach - totalSoFar + 100;
+          completionTokens = Math.min(
+            completionTokens + extra,
+            config.max_output_tokens
+          );
+        }
+        break;
+      }
+      case "tool_timeout_risk":
+        if (config.tools_enabled && prompt.expects_tools) {
+          toolCalls = 2;
+          toolTimeouts = 1;
+        }
+        break;
+      case "retrieval_noise_risk":
+        if (config.top_k > 8) retrievedTokens = Math.max(retrievedTokens, 1000);
+        break;
+      case "latency_breach":
+        // latencyMs already set above
+        break;
     }
-    
-    // More realistic timeout rate: 1-3% chance (was 5-18%)
-    const timeoutChance = 0.01 + seededRandom() * 0.02;
-    if (seededRandom() < timeoutChance) {
-      toolTimeouts = Math.floor(1 + seededRandom() * 2);
+  }
+
+  if (!forceFailureMode || forceFailureMode !== "tool_timeout_risk") {
+    if (config.tools_enabled && prompt.expects_tools) {
+      const isComplexPrompt = prompt.family.includes("long") || 
+                             prompt.family.includes("doc_grounded") ||
+                             promptTokens > 500;
+      
+      if (isComplexPrompt) {
+        const roll = seededRandom();
+        if (roll < 0.6) {
+          toolCalls = Math.floor(3 + seededRandom() * 3);
+        } else {
+          toolCalls = Math.floor(2 + seededRandom() * 7);
+        }
+      } else {
+        toolCalls = Math.floor(1 + seededRandom() * (seededRandom() < 0.7 ? 2 : 3));
+      }
+      
+      const timeoutChance = 0.01 + seededRandom() * 0.02;
+      if (seededRandom() < timeoutChance) {
+        toolTimeouts = Math.floor(1 + seededRandom() * 2);
+      }
+    }
+  }
+
+  if (!forceFailureMode) {
+    // ~5% chance: context_overflow
+    if (contextAtRisk && rollContextOverflow < 0.05) {
+      const overflowAmount = Math.floor(100 + seededRandom() * 500);
+      const minInputForOverflow = config.context_window + overflowAmount;
+      const currentInput = promptTokens + retrievedTokens;
+      if (minInputForOverflow > currentInput) {
+        retrievedTokens = Math.max(0, minInputForOverflow - promptTokens);
+      }
+    }
+
+    // ~8% chance: silent truncation
+    if (contextAtRisk && rollContext < 0.08) {
+      const needed =
+        Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
+        promptTokens;
+      if (needed > 0) {
+        retrievedTokens = Math.max(retrievedTokens, needed);
+      }
+    }
+
+    // ~5% chance: cost runaway
+    const totalSoFar = promptTokens + retrievedTokens + completionTokens;
+    const minTokensForCostBreach = Math.ceil(
+      (COST_BREACH_PER_PROBE * 1000) / config.cost_per_1k_tokens
+    );
+    if (rollCost < 0.05 && minTokensForCostBreach > totalSoFar) {
+      const extra = minTokensForCostBreach - totalSoFar + 100;
+      completionTokens = Math.min(
+        completionTokens + extra,
+        config.max_output_tokens
+      );
     }
   }
 
@@ -406,11 +469,13 @@ function generateTelemetry(
 
 /**
  * Run a single probe (prompt + config) and return result
- * Supports both simulation and real API modes
+ * Supports both simulation and real API modes.
+ * In simulate mode, optional forceFailureMode shapes telemetry so that rule fires (demo mix).
  */
 export async function runProbe(
   config: ProbeConfig,
-  prompt: PromptRecord
+  prompt: PromptRecord,
+  forceFailureMode?: FailureMode
 ): Promise<ProbeResult> {
   let telemetry: TelemetryRecord;
   
@@ -422,8 +487,8 @@ export async function runProbe(
     
     telemetry = await rateLimiter.execute(() => callLLM(config, prompt));
   } else {
-    // Use simulated telemetry
-    telemetry = generateTelemetry(config, prompt);
+    // Use simulated telemetry (with optional forced failure mode for demo mix)
+    telemetry = generateTelemetry(config, prompt, forceFailureMode);
   }
   
   // Compute derived metrics
@@ -474,15 +539,43 @@ export async function runAllProbes(
   
   // In simulate mode, run all probes in parallel for better performance
   if (currentMode === "simulate") {
+    // Guaranteed demo mix (Problem 5): assign one probe per failure mode so all 6 appear
+    const forcedByKey = new Map<string, FailureMode>();
+    const tasks: { config: ProbeConfig; prompt: PromptRecord; configIdx: number; promptIdx: number }[] = [];
+    for (let ci = 0; ci < configs.length; ci++) {
+      for (let pi = 0; pi < prompts.length; pi++) {
+        tasks.push({ config: configs[ci], prompt: prompts[pi], configIdx: ci, promptIdx: pi });
+      }
+    }
+    const assigned = new Set<number>();
+    for (const mode of ALL_FAILURE_MODES) {
+      for (let i = 0; i < tasks.length; i++) {
+        if (assigned.has(i)) continue;
+        const { config, prompt } = tasks[i];
+        const canSupport =
+          mode === "tool_timeout_risk"
+            ? config.tools_enabled && prompt.expects_tools
+            : mode === "retrieval_noise_risk"
+              ? config.top_k > 8
+              : true;
+        if (canSupport) {
+          const key = `${config.id}:${prompt.id}`;
+          forcedByKey.set(key, mode);
+          assigned.add(i);
+          break;
+        }
+      }
+    }
+
     const allProbePromises: Promise<ProbeResult>[] = [];
-    
     for (const config of configs) {
       for (const prompt of prompts) {
-        allProbePromises.push(runProbe(config, prompt));
+        const key = `${config.id}:${prompt.id}`;
+        const forced = forcedByKey.get(key);
+        allProbePromises.push(runProbe(config, prompt, forced));
       }
     }
     
-    // Run all probes in parallel
     const probeResults = await Promise.all(allProbePromises);
     if (onProgress) {
       onProgress(total, total);

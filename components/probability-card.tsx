@@ -31,8 +31,8 @@ export function ProbabilityCard({
       (c.config_a === selectedConfigB && c.config_b === selectedConfigA)
   );
 
-  // If we have a comparison, use it; otherwise show the first one or a default
-  const pValue = currentComparison
+  // pRaw = P(selectedConfigA is safer than selectedConfigB)
+  const pRaw = currentComparison
     ? currentComparison.config_a === selectedConfigA
       ? currentComparison.p_a_safer
       : 1 - currentComparison.p_a_safer
@@ -40,19 +40,16 @@ export function ProbabilityCard({
     ? filteredComparisons[0].p_a_safer
     : 0.5;
 
-  const isIndeterminate = pValue === 0.5;
-  const isSafe = pValue > 0.5;
+  const isIndeterminate = pRaw === 0.5;
+  // Always show confidence in the *safer* choice: high % = safer, never "0% + Higher Risk"
+  const isSaferA = pRaw > 0.5;
+  const confidenceInSafer = isSaferA ? pRaw : 1 - pRaw; // P(safer config is safer)
   const displayValue = isRunning
     ? "..."
     : isIndeterminate
     ? "N/A"
-    : `${(pValue * 100).toFixed(1)}%`;
-
-  const configLabel = currentComparison
-    ? currentComparison.config_a === selectedConfigA
-      ? `P(${selectedConfigA} safer than ${selectedConfigB})`
-      : `P(${selectedConfigB} safer than ${selectedConfigA})`
-    : "Probability Comparison";
+    : `${(confidenceInSafer * 100).toFixed(1)}%`;
+  const isSafe = true; // "safe" here means "we're showing the safer choice" (green)
 
   return (
     <Card
@@ -84,29 +81,17 @@ export function ProbabilityCard({
             {displayValue}
           </div>
           {!isIndeterminate && (
-            <div
-              className={cn(
-                "mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium leading-relaxed",
-                isSafe
-                  ? "bg-[#25924d]/10 text-[#25924d]"
-                  : "bg-destructive/10 text-destructive"
-              )}
-            >
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  isSafe ? "bg-[#25924d]" : "bg-destructive"
-                )}
-              />
-              {isSafe ? "Safer Choice" : "Higher Risk"}
+            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium leading-relaxed bg-[#25924d]/10 text-[#25924d]">
+              <span className="h-2 w-2 rounded-full bg-[#25924d]" />
+              {isSaferA
+                ? `${selectedConfigA || "Config A"} is the safer choice`
+                : `${selectedConfigB || "Config B"} is the safer choice`}
             </div>
           )}
           <div className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto px-2">
             {isIndeterminate
               ? "Both configurations show similar reliability. Consider other factors like cost or speed."
-              : isSafe
-              ? `This percentage shows how confident we are that ${selectedConfigA || "Config A"} is more reliable than ${selectedConfigB || "Config B"}.`
-              : `This percentage indicates the probability that ${selectedConfigB || "Config B"} has a higher failure risk than ${selectedConfigA || "Config A"}.`}
+              : `Confidence that ${isSaferA ? selectedConfigA || "Config A" : selectedConfigB || "Config B"} has a lower failure rate than the other (Bayesian comparison).`}
           </div>
         </div>
 
