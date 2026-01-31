@@ -4,11 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx tsx tests/statistics.test.ts",
     "test:statistics": "npx tsx tests/statistics.test.ts",
     "probes": "tsx src/cli/run-probes.ts",
     "analyze": "tsx src/cli/run-analysis.ts",
-    "generate-prompts": "tsx src/cli/generate-domain-prompts.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
@@ -33,7 +32,6 @@
     "autoprefixer": "^10.4.24",
     "dotenv": "^17.2.3",
     "next": "^16.1.6",
-    "openai": "^6.17.0",
     "postcss": "^8.5.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
