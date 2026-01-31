@@ -21,6 +21,7 @@ function countFailures(events: FailureEvent[], configId: string): number {
 
 /**
  * Estimate failure probability p̂ for a config: k failures out of n trials.
+ * Edge cases: empty events → k=0; totalTrials=0 or negative → n=max(0,k), phat=0 when n=0.
  * @param events - failure events from probe run
  * @param configId - config to compute for
  * @param totalTrials - total number of probe runs for this config (e.g. prompts.length)
@@ -31,7 +32,8 @@ export function estimatePhat(
   totalTrials: number
 ): Stats {
   const k = countFailures(events, configId);
-  const n = Math.max(totalTrials, k); // n at least as large as k
+  const safeN = Math.max(0, typeof totalTrials === "number" ? totalTrials : 0);
+  const n = Math.max(safeN, k); // n at least as large as k
   const phat = n === 0 ? 0 : k / n;
   return {
     config_id: configId,

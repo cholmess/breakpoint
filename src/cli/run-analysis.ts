@@ -60,8 +60,8 @@ function loadPromptsForAnalysis(): ReturnType<typeof loadPrompts> {
       return prompts;
     }
   }
-  console.error("No prompt suite found at data/prompts/prompt-suite.json or data/prompts/suite.json");
-  process.exit(1);
+  console.warn("   No prompt suite found; using empty prompts (n=0 per config, family=unknown for distributions).");
+  return [];
 }
 
 function main(): void {

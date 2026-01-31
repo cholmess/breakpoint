@@ -29,12 +29,16 @@ function buildPromptFamilyMap(prompts: PromptRecord[]): Map<string, string> {
 
 /**
  * Distributions by failure mode and by prompt family.
+ * Edge case: empty events → returns empty by_failure_mode and by_prompt_family.
  */
 export function modeDistributions(
   events: FailureEvent[],
   prompts: PromptRecord[]
 ): DistributionsOutput {
-  const familyMap = buildPromptFamilyMap(prompts);
+  if (!events || events.length === 0) {
+    return { by_failure_mode: {}, by_prompt_family: {} };
+  }
+  const familyMap = buildPromptFamilyMap(prompts ?? []);
   const byMode: Record<string, { count: number }> = {};
   const byFamily: Record<string, { count: number }> = {};
   const total = events.length;
@@ -74,16 +78,20 @@ export function modeDistributions(
 
 /**
  * Run full analysis: per-config stats with bootstrap and Bayesian CIs.
+ * Edge case: empty events → returns { configs: {} }; empty prompts → totalTrials=0, n per config = max(0,k).
  */
 export function runAnalysis(
   events: FailureEvent[],
   prompts: PromptRecord[]
 ): AnalysisOutput {
+  if (!events || events.length === 0) {
+    return { configs: {} };
+  }
   const configIds = new Set<string>();
   for (const e of events) {
     configIds.add(e.config_id);
   }
-  const totalTrials = prompts.length;
+  const totalTrials = Array.isArray(prompts) ? prompts.length : 0;
   const configs: Record<string, Stats> = {};
 
   for (const configId of configIds) {
@@ -98,13 +106,15 @@ export function runAnalysis(
 
 /**
  * Run pairwise comparisons: P(A safer than B) for each pair.
+ * Edge case: empty or single config → returns { comparisons: [] }.
  */
 export function runComparisons(statsList: Stats[]): ComparisonsOutput {
+  const list = Array.isArray(statsList) ? statsList : [];
   const comparisons: { config_a: string; config_b: string; p_a_safer: number }[] = [];
-  for (let i = 0; i < statsList.length; i++) {
-    for (let j = i + 1; j < statsList.length; j++) {
-      const a = statsList[i];
-      const b = statsList[j];
+  for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i];
+      const b = list[j];
       const { pASafer } = compareConfigs(a, b);
       comparisons.push({
         config_a: a.config_id,

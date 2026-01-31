@@ -59,6 +59,16 @@ function testEstimatePhat(): void {
   assert.strictEqual(emptyStats.n, 10);
   assert.strictEqual(emptyStats.phat, 0);
 
+  const zeroTrials = estimatePhat([], "A", 0);
+  assert.strictEqual(zeroTrials.k, 0);
+  assert.strictEqual(zeroTrials.n, 0);
+  assert.strictEqual(zeroTrials.phat, 0);
+
+  const negTrials = estimatePhat([], "A", -5);
+  assert.strictEqual(negTrials.k, 0);
+  assert.strictEqual(negTrials.n, 0);
+  assert.strictEqual(negTrials.phat, 0);
+
   const allFail = estimatePhat(events, "A", 3);
   assert.ok(allFail.k <= 3);
   console.log("  estimatePhat: ok");
@@ -85,6 +95,9 @@ function testBootstrapCI(): void {
   const [loEmpty, hiEmpty] = bootstrapCI(0, 0);
   assert.strictEqual(loEmpty, 0);
   assert.strictEqual(hiEmpty, 0);
+
+  const [loKgtN, hiKgtN] = bootstrapCI(15, 10);
+  assert.ok(loKgtN >= 0 && hiKgtN <= 1 && loKgtN <= hiKgtN, "k>n clamped");
   console.log("  bootstrapCI: ok");
 }
 
@@ -105,6 +118,9 @@ function testBayesianBetaCI(): void {
   const [loEmpty, hiEmpty] = bayesianBetaCI(0, 0);
   assert.strictEqual(loEmpty, 0);
   assert.strictEqual(hiEmpty, 0);
+
+  const [loKgtN, hiKgtN] = bayesianBetaCI(12, 10);
+  assert.ok(loKgtN >= 0 && hiKgtN <= 1 && loKgtN <= hiKgtN, "k>n clamped");
   console.log("  bayesianBetaCI: ok");
 }
 
@@ -123,6 +139,10 @@ function testCompareConfigs(): void {
   const c = { config_id: "C", k: 0, n: 10, phat: 0 };
   const { pASafer: pCSafer } = compareConfigs(c, a);
   assert.ok(pCSafer > 0.5);
+
+  const noData = { config_id: "X", k: 0, n: 0, phat: 0 };
+  const { pASafer: pIndet } = compareConfigs(noData, a);
+  assert.strictEqual(pIndet, 0.5, "n=0 returns indeterminate 0.5");
   console.log("  compareConfigs: ok");
 }
 
@@ -140,6 +160,10 @@ function testModeDistributions(): void {
     modeSum += entry.count;
   }
   assert.strictEqual(modeSum, events.length);
+
+  const emptyOut = modeDistributions([], mockPrompts());
+  assert.deepStrictEqual(emptyOut.by_failure_mode, {});
+  assert.deepStrictEqual(emptyOut.by_prompt_family, {});
   console.log("  modeDistributions: ok");
 }
 
@@ -147,7 +171,6 @@ function testModeDistributions(): void {
 function testIntegration(): void {
   const events = loadFixture();
   const prompts = mockPrompts();
-  if (events.length === 0) return;
 
   const analysisOutput = runAnalysis(events, prompts);
   assert.ok(Object.keys(analysisOutput.configs).length >= 1);
@@ -168,6 +191,16 @@ function testIntegration(): void {
   const distributionsOutput = runDistributions(events, prompts);
   assert.ok(Object.keys(distributionsOutput.by_failure_mode).length >= 1);
   assert.ok(Object.keys(distributionsOutput.by_prompt_family).length >= 1);
+
+  const emptyAnalysis = runAnalysis([], prompts);
+  assert.deepStrictEqual(emptyAnalysis.configs, {});
+  const emptyDist = runDistributions([], prompts);
+  assert.deepStrictEqual(emptyDist.by_failure_mode, {});
+  assert.deepStrictEqual(emptyDist.by_prompt_family, {});
+  const emptyComp = runComparisons([]);
+  assert.deepStrictEqual(emptyComp.comparisons, []);
+  assert.deepStrictEqual(runComparisons(statsList.slice(0, 1)).comparisons, []);
+
   console.log("  integration: ok");
 }
 
