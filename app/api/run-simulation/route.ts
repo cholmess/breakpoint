@@ -29,11 +29,50 @@ import {
   computeTrialsPerConfig,
 } from "@/src/lib/analysis";
 import { clearTelemetry } from "@/src/lib/telemetry-logger";
-import type { ProbeConfig, PromptRecord } from "@/src/types";
+import type { ProbeConfig, PromptRecord, ProbeResult, FailureEvent } from "@/src/types";
 
 const PROMPTS_PATH = "data/prompts/prompt-suite.json";
 
-export const maxDuration = 120; // Allow up to 120s (2 minutes) for probes - simulate mode is fast (~20s), real mode optimized to <1min
+export const maxDuration = 120;
+
+/** Log k/n/phat per config to verify Task 2 (failure rate calculation). */
+function logAnalysisKn(analysis: { configs: Record<string, { config_id: string; k: number; n: number; phat: number; low_sample_warning?: boolean }> }): void {
+  for (const [id, s] of Object.entries(analysis.configs)) {
+    const warn = s.low_sample_warning ? " [low_sample_warning]" : "";
+    console.log(`[run-simulation] Analysis ${id}: k=${s.k} n=${s.n} phat=${(s.phat * 100).toFixed(2)}%${warn}`);
+  }
+}
+
+/** Log per-result rule evaluation for debugging Problem 5 (all failure modes). */
+function logRuleEvaluationSummary(
+  results: ProbeResult[],
+  events: FailureEvent[],
+  maxSampleLogs: number = 5
+): void {
+  const eventsByKey = new Map<string, FailureEvent[]>();
+  for (const e of events) {
+    const key = `${e.prompt_id}:${e.config_id}`;
+    if (!eventsByKey.has(key)) eventsByKey.set(key, []);
+    eventsByKey.get(key)!.push(e);
+  }
+  const modeCounts = new Map<string, number>();
+  for (const e of events) {
+    modeCounts.set(e.failure_mode, (modeCounts.get(e.failure_mode) ?? 0) + 1);
+  }
+  console.log("[run-simulation] Rules: evaluating", results.length, "results →", events.length, "failure events");
+  console.log("[run-simulation] Failure modes detected:", Object.fromEntries([...modeCounts.entries()].sort((a, b) => b[1] - a[1])));
+  let logged = 0;
+  for (const r of results) {
+    if (logged >= maxSampleLogs) break;
+    const key = `${r.prompt_id}:${r.config_id}`;
+    const resultEvents = eventsByKey.get(key) ?? [];
+    const modes = resultEvents.map((e) => e.failure_mode).join(", ") || "none";
+    console.log(
+      `[run-simulation]   ${r.prompt_id} ${r.config_id}: context_usage=${(r.context_usage * 100).toFixed(1)}% latency=${r.telemetry.latency_ms}ms cost=$${r.estimated_cost.toFixed(4)} tool_timeouts=${r.telemetry.tool_timeouts} → ${modes}`
+    );
+    logged++;
+  }
+} // Allow up to 120s (2 minutes) for probes - simulate mode is fast (~20s), real mode optimized to <1min
 
 export async function POST(req: NextRequest) {
   try {
@@ -152,11 +191,13 @@ export async function POST(req: NextRequest) {
     );
     const rules = getEnhancedRules(configMap);
     const events = evaluateAllRules(results, rules);
+    logRuleEvaluationSummary(results, events);
     const timeline = buildBreakFirstTimeline(events);
 
     const configIds = configs.map(c => c.id);
     const trialsPerConfig = computeTrialsPerConfig(results);
     const analysis = runAnalysis(events, prompts, configIds, trialsPerConfig);
+    logAnalysisKn(analysis);
     const statsList = Object.values(analysis.configs);
     const comparisons = runComparisons(statsList);
     const distributions = runDistributions(events, prompts);

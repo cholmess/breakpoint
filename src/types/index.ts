@@ -104,6 +104,8 @@ export interface Stats {
   ci_bootstrap?: [number, number]; // [lower, upper] bootstrap CI
   ci_bayesian?: [number, number]; // [lower, upper] Bayesian CI
   ci_wilson?: [number, number]; // [lower, upper] Wilson score CI (deterministic, width varies with k,n)
+  /** True when n < 100 and phat < 1%, or n < 30; use for UI to show "low sample" / uncertain estimate. */
+  low_sample_warning?: boolean;
 }
 
 export interface AnalysisOutput {
