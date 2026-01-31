@@ -71,6 +71,9 @@ export function DistributionCharts({
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Failure Mode Distribution
           </CardTitle>
+          <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+            Which types of problems occurred most often during testing.
+          </p>
         </CardHeader>
         <CardContent className="p-2">
           <div className="h-[180px]">
@@ -140,6 +143,9 @@ export function DistributionCharts({
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Prompt Family Distribution
           </CardTitle>
+          <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+            Which types of prompts triggered the most failures.
+          </p>
         </CardHeader>
         <CardContent className="p-2">
           <div className="h-[180px]">

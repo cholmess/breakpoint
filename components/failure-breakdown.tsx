@@ -67,8 +67,11 @@ export function FailureBreakdown({
       <Card className="py-3 glass-card">
         <CardHeader className="py-2 px-4">
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Failure Mode Breakdown
+            What Went Wrong?
           </CardTitle>
+          <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+            Breakdown of specific issues detected during testing, sorted by severity.
+          </p>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           <div className="text-xs text-muted-foreground text-center py-4">

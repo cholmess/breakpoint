@@ -25,8 +25,11 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
       <Card className="py-3">
         <CardHeader className="py-2 px-4">
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Failure Rate with Confidence Intervals
+            Failure Rate Comparison
           </CardTitle>
+          <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
+            Shows how often each configuration fails, with uncertainty ranges. Lower is better.
+          </p>
         </CardHeader>
         <CardContent className="p-4">
           <div className="text-xs text-muted-foreground text-center py-4">
