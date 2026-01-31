@@ -136,8 +136,8 @@ export default function Dashboard() {
           ? 5000   // 40 probes batched ~5s
           : 20000  // 400 probes ~20s
         : runSize === "quick"
-          ? 45000  // 40 probes real ~30-60s
-          : 210000; // 400 probes real ~3.5min
+          ? 30000  // 40 probes real ~30s with 20 concurrent
+          : 50000; // 400 probes real ~50s with increased concurrency
     const progressCap = 95; // Allow progress up to 95%, then wait for completion
     const updateIntervalMs = 600; // Update every 600ms
     const incrementsToReachCap = (estimatedTimeMs / updateIntervalMs) * (progressCap / 100);
@@ -338,7 +338,7 @@ export default function Dashboard() {
                     : `Running simulation... (est. ${
                         runMode === "simulate"
                           ? runSize === "quick" ? "~5s" : "~20s"
-                          : runSize === "quick" ? "~30-60s" : "~3-4min"
+                          : runSize === "quick" ? "~30s" : "~50s"
                       } for ~${runSize === "quick" ? "40" : "400"} probes)`
                   }
                 </div>
