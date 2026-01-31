@@ -2,13 +2,41 @@
 
 This project now supports **real API calls** to Google Gemini for measuring actual telemetry, in addition to the simulation mode.
 
+## Supported Providers
+
+- **OpenAI** (gpt-4, gpt-4o, gpt-3.5-turbo, etc.) – Set `OPENAI_API_KEY` in `.env`
+- **Google Gemini** (gemini-1.5-flash, gemini-1.5-pro, etc.) – Set `GEMINI_API_KEY` in `.env`
+- **Manus AI** (manus-1.6, manus-1.6-lite, manus-1.6-max) – Set `MANUS_API_KEY` in `.env`
+
+Provider is inferred from the `model` field in configs (`gpt-*` → OpenAI, `gemini-*` → Gemini, `manus-*` → Manus), or set explicitly via `provider` field.
+
 ## Quick Start
 
-### 1. Get a Gemini API Key
+### 1. Get API Keys
 
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-2. Create a new API key
-3. Copy the key
+**OpenAI:**
+- Go to [OpenAI API Keys](https://platform.openai.com/api-keys)
+- Create a new key
+
+**Google Gemini – free tier (no billing required):**
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Sign in with your Google account
+3. Click **Get API key** → **Create API key** → **Create API key in new project**
+4. Copy the key
+
+The Gemini API has a **free tier** with rate limits – no credit card needed. Good for development and small runs.
+
+**Hackathon credits:** If your event offers Google Cloud/Gemini credits (e.g. via Devpost, Google Cloud Skills Boost, or event organizers), follow the instructions from the hackathon. Typically:
+- Sign up via the event’s campaign/registration link
+- Complete any required labs or onboarding
+- Credits are applied to your Google Cloud project or AI Studio account
+
+For current hackathon offers, search [Devpost](https://devpost.com/hackathons) for “Gemini” or “Google AI”.
+
+**Manus AI:**
+- Go to [manus.im](https://manus.im) and sign up
+- Open **Settings** → **Integrations** → **API** to generate an API key
+- Models: `manus-1.6` (default), `manus-1.6-lite` (faster), `manus-1.6-max` (more capable)
 
 ### 2. Configure Environment
 
@@ -18,12 +46,22 @@ Create a `.env` file in the project root:
 cp .env.example .env
 ```
 
-Edit `.env` and add your API key:
+Edit `.env` and add the API keys for the providers your configs use:
 
 ```env
-GEMINI_API_KEY=your_actual_api_key_here
+# For configs with gpt-4, gpt-3.5-turbo, etc.
+OPENAI_API_KEY=sk-proj-...
+
+# For configs with gemini-1.5-flash, etc.
+GEMINI_API_KEY=...
+
+# For configs with manus-1.6, etc.
+MANUS_API_KEY=...
+
 MODE=real
 ```
+
+**⚠️ SECURITY**: Never commit your `.env` file or share API keys. If you accidentally expose a key, revoke it immediately in the provider's dashboard and create a new one.
 
 ### 3. Run with Real API Calls
 

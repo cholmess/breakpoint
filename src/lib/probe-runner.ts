@@ -12,7 +12,8 @@ import type {
   TelemetryRecord,
 } from "../types";
 import { logTelemetry } from "./telemetry-logger";
-import { callGeminiWithRetry, RateLimiter } from "./gemini-client";
+import { callLLM } from "./llm-client";
+import { RateLimiter } from "./gemini-client";
 
 // Execution mode: "simulate" or "real"
 export type ExecutionMode = "simulate" | "real";
@@ -210,9 +211,7 @@ export async function runProbe(
       throw new Error("Rate limiter not initialized. Call setMode('real') first.");
     }
     
-    telemetry = await rateLimiter.execute(() =>
-      callGeminiWithRetry(config, prompt)
-    );
+    telemetry = await rateLimiter.execute(() => callLLM(config, prompt));
   } else {
     // Use simulated telemetry
     telemetry = generateTelemetry(config, prompt);
