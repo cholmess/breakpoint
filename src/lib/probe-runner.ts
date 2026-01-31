@@ -299,12 +299,13 @@ function generateTelemetry(
     );
   }
 
-  // Simulate tool calls and timeouts – vary probability (5–18%) so not always same count
+  // Simulate tool calls and timeouts with realistic low probability
   let toolCalls = 0;
   let toolTimeouts = 0;
   if (config.tools_enabled && prompt.expects_tools) {
     toolCalls = Math.floor(1 + seededRandom() * 5);
-    const timeoutChance = 0.05 + seededRandom() * 0.13; // 5–18% per probe
+    // More realistic timeout rate: 1-3% chance (was 5-18%)
+    const timeoutChance = 0.01 + seededRandom() * 0.02;
     if (seededRandom() < timeoutChance) {
       toolTimeouts = Math.floor(1 + seededRandom() * 2);
     }
