@@ -144,6 +144,24 @@ npm run probes -- --mode simulate --seed 42
 - ⚠️ API costs apply
 - ⚠️ Rate limited (5 concurrent, 200ms delays)
 
+## Person B: Probability & Analytics
+
+This component computes per-config failure probabilities, confidence intervals, pairwise “safer than” probabilities, and distributions by failure mode and prompt family.
+
+### Usage
+
+```bash
+npm run analyze
+```
+
+Reads `output/failure-events.json` (or `tests/fixtures/failure-events.json`) and `data/prompts/suite.json`, and writes to `output/`:
+
+- **analysis.json** – Per-config stats (phat, bootstrap/Bayesian 95% CIs)
+- **comparisons.json** – Pairwise P(A safer than B)
+- **distributions.json** – Counts and proportions by failure mode and by prompt family
+
+**Person C (Frontend):** See **[docs/JSON_SCHEMAS.md](./docs/JSON_SCHEMAS.md)** for exact field names, types, and examples for dashboard, confidence bands, and distribution charts.
+
 ### Next Steps
 
 To make this useful for the hackathon:
