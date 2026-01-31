@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfigForm } from "@/components/config-form";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -22,9 +22,28 @@ export function FlipCard({
   onConfigBChange,
 }: FlipCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleFlip = () => {
+    if (isTransitioning) return; // Prevent rapid clicks during transition
+    
+    setIsTransitioning(true);
+    setIsFlipped(!isFlipped);
+    
+    // Clear any existing timeout
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    
+    // Re-enable after transition completes (500ms)
+    transitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 500);
+  };
 
   return (
-    <div className="relative w-full" style={{ perspective: "1000px" }}>
+    <div className="relative w-full overflow-hidden" style={{ perspective: "1000px" }}>
       <div
         className={cn(
           "relative w-full transition-transform duration-500",
@@ -48,8 +67,9 @@ export function FlipCard({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => setIsFlipped(!isFlipped)}
-                    className="ml-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/20 text-primary hover:bg-primary/30 transition-all text-sm font-medium leading-relaxed"
+                    onClick={handleFlip}
+                    disabled={isTransitioning}
+                    className="ml-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/20 text-primary hover:bg-primary/30 transition-all text-sm font-medium leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Flip card"
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -85,8 +105,9 @@ export function FlipCard({
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => setIsFlipped(!isFlipped)}
-                    className="ml-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/20 text-primary hover:bg-primary/30 transition-all text-sm font-medium leading-relaxed"
+                    onClick={handleFlip}
+                    disabled={isTransitioning}
+                    className="ml-2 flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/20 text-primary hover:bg-primary/30 transition-all text-sm font-medium leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Flip card"
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -111,9 +132,21 @@ export function FlipCard({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setIsFlipped(false)}
+            onClick={() => {
+              if (!isTransitioning && isFlipped) {
+                setIsTransitioning(true);
+                setIsFlipped(false);
+                if (transitionTimeoutRef.current) {
+                  clearTimeout(transitionTimeoutRef.current);
+                }
+                transitionTimeoutRef.current = setTimeout(() => {
+                  setIsTransitioning(false);
+                }, 500);
+              }
+            }}
+            disabled={isTransitioning || !isFlipped}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors leading-relaxed",
+              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed",
               !isFlipped 
                 ? "bg-[#95ccf9]/20 text-[#95ccf9] border border-[#95ccf9]/30" 
                 : "bg-border text-muted-foreground hover:bg-[#95ccf9]/10 hover:text-[#95ccf9] border border-border"
@@ -128,9 +161,21 @@ export function FlipCard({
           </button>
           <button
             type="button"
-            onClick={() => setIsFlipped(true)}
+            onClick={() => {
+              if (!isTransitioning && !isFlipped) {
+                setIsTransitioning(true);
+                setIsFlipped(true);
+                if (transitionTimeoutRef.current) {
+                  clearTimeout(transitionTimeoutRef.current);
+                }
+                transitionTimeoutRef.current = setTimeout(() => {
+                  setIsTransitioning(false);
+                }, 500);
+              }
+            }}
+            disabled={isTransitioning || isFlipped}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors leading-relaxed",
+              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed",
               isFlipped 
                 ? "bg-[#25924d]/20 text-[#25924d] border border-[#25924d]/30" 
                 : "bg-border text-muted-foreground hover:bg-[#25924d]/10 hover:text-[#25924d] border border-border"

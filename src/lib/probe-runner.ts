@@ -452,7 +452,7 @@ export type ProgressCallback = (completed: number, total: number) => void;
  * Optional progress callback for real-time feedback
  * 
  * In real mode, probes run concurrently (rate limiter controls max 5 concurrent)
- * In simulate mode, runs in batches for speed without overwhelming the system
+ * In simulate mode, runs all probes in parallel for maximum speed
  */
 export async function runAllProbes(
   configs: ProbeConfig[],
@@ -462,6 +462,25 @@ export async function runAllProbes(
   const total = configs.length * prompts.length;
   let completed = 0;
   
+  // In simulate mode, run all probes in parallel for better performance
+  if (currentMode === "simulate") {
+    const allProbePromises: Promise<ProbeResult>[] = [];
+    
+    for (const config of configs) {
+      for (const prompt of prompts) {
+        allProbePromises.push(runProbe(config, prompt));
+      }
+    }
+    
+    // Run all probes in parallel
+    const probeResults = await Promise.all(allProbePromises);
+    if (onProgress) {
+      onProgress(total, total);
+    }
+    return probeResults;
+  }
+  
+  // In real mode, use concurrent execution with rate limiting
   // Build all probe tasks
   const probeTasks: Array<{ config: ProbeConfig; prompt: PromptRecord }> = [];
   for (const config of configs) {
@@ -470,37 +489,30 @@ export async function runAllProbes(
     }
   }
   
-  // For simulate mode: process in batches of 50 for speed
   // For real mode: process all concurrently (rate limiter will control to max 5)
-  const batchSize = currentMode === "simulate" ? 50 : probeTasks.length;
   const results: ProbeResult[] = [];
   
-  for (let i = 0; i < probeTasks.length; i += batchSize) {
-    const batch = probeTasks.slice(i, i + batchSize);
+  // Run all probes concurrently (rate limiter controls concurrency in real mode)
+  const probePromises = probeTasks.map(async ({ config, prompt }) => {
+    const result = await runProbe(config, prompt);
     
-    // Run batch concurrently
-    const batchResults = await Promise.all(
-      batch.map(async ({ config, prompt }) => {
-        const result = await runProbe(config, prompt);
-        
-        completed++;
-        
-        // Call progress callback if provided
-        if (onProgress) {
-          onProgress(completed, total);
-        }
-        
-        // Keep console.log for debugging (only in real mode, every 10 probes)
-        if (currentMode === "real" && completed % 10 === 0) {
-          console.log(`   Progress: ${completed}/${total} probes completed`);
-        }
-        
-        return result;
-      })
-    );
+    completed++;
     
-    results.push(...batchResults);
-  }
+    // Call progress callback if provided
+    if (onProgress) {
+      onProgress(completed, total);
+    }
+    
+    // Keep console.log for debugging (only in real mode, every 10 probes)
+    if (currentMode === "real" && completed % 10 === 0) {
+      console.log(`   Progress: ${completed}/${total} probes completed`);
+    }
+    
+    return result;
+  });
+  
+  const allResults = await Promise.all(probePromises);
+  results.push(...allResults);
   
   return results;
 }
