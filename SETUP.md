@@ -76,6 +76,26 @@ The dashboard should load with:
 - Interactive configuration forms
 - Charts and visualizations
 
+### 6. Using Real API (optional)
+
+To run probes against **real** LLM APIs (OpenAI, Gemini, Manus) instead of simulated data:
+
+1. **Copy the example env file** (in the project root):
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env`** and add API keys for the providers your configs use:
+   - **OpenAI** (gpt-4, gpt-3.5-turbo, etc.): `OPENAI_API_KEY=sk-...` — [Get key](https://platform.openai.com/api-keys)
+   - **Google Gemini**: `GEMINI_API_KEY=...` or `GEMINI_API_KEY_CH=...` — [Free tier](https://aistudio.google.com/app/apikey)
+   - **Manus AI**: `MANUS_API_KEY=...` or `MANUS_API_KEY_CH=...` — [Get key](https://open.manus.ai/docs)
+
+3. **Restart the dev server** so it picks up the new env vars: stop with Ctrl+C, then `npm run dev` again.
+
+4. In the dashboard, select **Run mode → Real API** and click **Run Simulation**.
+
+If a key is missing, the UI will show a warning and disable the Run button; the error message in the console will tell you exactly which key to add and where to get it.
+
 ## Troubleshooting
 
 ### Issue: "Module not found" errors
@@ -109,6 +129,15 @@ If it's missing, run `npm install` again.
   nvm install 18.20.6
   nvm use 18.20.6
   ```
+
+### Issue: "OPENAI_API_KEY not found" (or GEMINI_API_KEY / MANUS_API_KEY)
+
+**Solution:** You selected **Real API** but the provider key isn’t set. Do this:
+1. Copy `.env.example` to `.env` in the project root: `cp .env.example .env`
+2. Open `.env` and add the key (e.g. `OPENAI_API_KEY=sk-your-key-here`)
+3. Restart the dev server (`npm run dev`)
+
+See step 6 in the setup section above for links to get API keys.
 
 ### Issue: Missing output JSON files
 

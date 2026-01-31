@@ -14,7 +14,7 @@ export function initOpenAIClient(): OpenAI {
 
   if (!apiKey) {
     throw new Error(
-      "OPENAI_API_KEY not found in environment. Please set it in .env file."
+      "OPENAI_API_KEY not found. Copy .env.example to .env in the project root and add your key. Get a key: https://platform.openai.com/api-keys"
     );
   }
 
