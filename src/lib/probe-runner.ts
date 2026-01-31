@@ -83,7 +83,53 @@ export function loadConfigs(dir: string): ProbeConfig[] {
 }
 
 /**
+ * Domain prompt suite metadata
+ */
+export interface SuiteMetadata {
+  use_case_description: string;
+  generated_at: string;
+  generation_method: string;
+  prompt_count: number;
+  complexity?: string;
+  telemetry_method?: string;
+}
+
+/**
+ * Load domain-generated prompts from a suite file
+ * Supports the domain-prompt-suite format with metadata
+ */
+export function loadDomainPrompts(suiteFile: string): {
+  metadata: SuiteMetadata;
+  prompts: PromptRecord[];
+} {
+  const targetPath = path.join(process.cwd(), suiteFile);
+  
+  if (!fs.existsSync(targetPath)) {
+    throw new Error(`Suite file not found: ${targetPath}`);
+  }
+  
+  const content = fs.readFileSync(targetPath, "utf-8");
+  const data = JSON.parse(content);
+  
+  // Check if it's a domain prompt suite format
+  if (data.suite_metadata && Array.isArray(data.prompts)) {
+    return {
+      metadata: data.suite_metadata as SuiteMetadata,
+      prompts: data.prompts as PromptRecord[],
+    };
+  }
+  
+  throw new Error(
+    `Invalid domain prompt suite format. Expected { suite_metadata, prompts }`
+  );
+}
+
+/**
  * Load all prompts from a directory or single file
+ * Supports multiple formats:
+ * - Array of prompts: [prompt1, prompt2, ...]
+ * - Single prompt object: { id, family, ... }
+ * - Domain suite format: { suite_metadata, prompts: [...] }
  */
 export function loadPrompts(dirOrFile: string): PromptRecord[] {
   const targetPath = path.join(process.cwd(), dirOrFile);
@@ -104,10 +150,16 @@ export function loadPrompts(dirOrFile: string): PromptRecord[] {
       const content = fs.readFileSync(filePath, "utf-8");
       const data = JSON.parse(content);
       
-      // Handle both single object and array
-      if (Array.isArray(data)) {
+      // Handle domain suite format
+      if (data.suite_metadata && Array.isArray(data.prompts)) {
+        prompts.push(...(data.prompts as PromptRecord[]));
+      }
+      // Handle array format
+      else if (Array.isArray(data)) {
         prompts.push(...data);
-      } else {
+      }
+      // Handle single prompt object
+      else if (data.id && data.prompt) {
         prompts.push(data);
       }
     }
@@ -118,11 +170,22 @@ export function loadPrompts(dirOrFile: string): PromptRecord[] {
     const content = fs.readFileSync(targetPath, "utf-8");
     const data = JSON.parse(content);
     
+    // Handle domain suite format
+    if (data.suite_metadata && Array.isArray(data.prompts)) {
+      return data.prompts as PromptRecord[];
+    }
+    // Handle array format
     if (Array.isArray(data)) {
       return data;
-    } else {
+    }
+    // Handle single prompt object
+    if (data.id && data.prompt) {
       return [data];
     }
+    
+    throw new Error(
+      `Invalid prompt file format. Expected array, single prompt, or domain suite format.`
+    );
   }
 }
 

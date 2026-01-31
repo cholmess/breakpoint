@@ -8,6 +8,7 @@
     "test:statistics": "npx tsx tests/statistics.test.ts",
     "probes": "tsx src/cli/run-probes.ts",
     "analyze": "tsx src/cli/run-analysis.ts",
+    "generate-prompts": "tsx src/cli/generate-domain-prompts.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
