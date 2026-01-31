@@ -221,14 +221,46 @@ const COST_BREACH_PER_PROBE = 0.10;
 const CONTEXT_USAGE_BREACH = 0.85;
 
 /**
+ * Get model-specific latency parameters for more realistic simulation
+ */
+function getModelLatencyProfile(model: string): { baseMin: number; baseMax: number; tokenMultiplier: number } {
+  const modelLower = model.toLowerCase();
+  
+  // GPT-4 family: slower, more thorough
+  if (modelLower.includes("gpt-4") && !modelLower.includes("turbo") && !modelLower.includes("mini")) {
+    return { baseMin: 800, baseMax: 1500, tokenMultiplier: 0.8 };
+  }
+  // GPT-4 Turbo / GPT-4o: faster than base GPT-4
+  if (modelLower.includes("gpt-4-turbo") || modelLower.includes("gpt-4o")) {
+    return { baseMin: 400, baseMax: 900, tokenMultiplier: 0.5 };
+  }
+  // GPT-3.5 / mini models: fast
+  if (modelLower.includes("gpt-3.5") || modelLower.includes("mini")) {
+    return { baseMin: 200, baseMax: 500, tokenMultiplier: 0.3 };
+  }
+  // Gemini family: generally fast
+  if (modelLower.includes("gemini")) {
+    return { baseMin: 300, baseMax: 700, tokenMultiplier: 0.4 };
+  }
+  // Manus: async, slower
+  if (modelLower.includes("manus")) {
+    return { baseMin: 1000, baseMax: 2500, tokenMultiplier: 1.0 };
+  }
+  // Default: moderate speed
+  return { baseMin: 400, baseMax: 800, tokenMultiplier: 0.5 };
+}
+
+/**
  * Generate realistic telemetry based on config and prompt.
  * Simulates multiple failure modes so failure rate varies by config (not just 0% or 5%).
+ * Uses model-specific variance for realistic behavior.
  */
 function generateTelemetry(
   config: ProbeConfig,
   prompt: PromptRecord
 ): TelemetryRecord {
   const promptTokens = estimateTokens(prompt.prompt);
+  const latencyProfile = getModelLatencyProfile(config.model);
 
   // Simulate retrieved tokens (for RAG scenarios) – match suite family names
   let retrievedTokens = 0;
@@ -242,10 +274,22 @@ function generateTelemetry(
     );
   }
 
-  // Simulate completion tokens based on prompt complexity
+  // Simulate completion tokens based on prompt complexity and model
   let completionTokens = Math.floor(
     promptTokens * (0.3 + seededRandom() * 0.4)
   );
+  
+  // Model-specific output tendencies
+  const modelLower = config.model.toLowerCase();
+  if (modelLower.includes("gpt-4") && !modelLower.includes("mini")) {
+    // GPT-4 tends to be more verbose
+    completionTokens = Math.floor(completionTokens * (1.1 + seededRandom() * 0.2));
+  } else if (modelLower.includes("mini") || modelLower.includes("3.5")) {
+    // Smaller models are more concise
+    completionTokens = Math.floor(completionTokens * (0.8 + seededRandom() * 0.2));
+  }
+  
+  // Prompt family adjustments
   if (prompt.family.startsWith("short")) {
     completionTokens = Math.floor(completionTokens * 0.5);
   } else if (
@@ -268,9 +312,10 @@ function generateTelemetry(
       LATENCY_BREACH_MS + 200 + seededRandom() * 2500
     );
   } else {
-    const baseLatency = 200 + seededRandom() * 300;
+    // Use model-specific base latency for realism
+    const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
     const tokenLatency =
-      (promptTokens + retrievedTokens + completionTokens) * 0.5;
+      (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
     latencyMs = Math.floor(
       baseLatency + tokenLatency + seededRandom() * 500
     );
@@ -299,11 +344,29 @@ function generateTelemetry(
     );
   }
 
-  // Simulate tool calls and timeouts with realistic low probability
+  // Simulate tool calls and timeouts with realistic distribution
   let toolCalls = 0;
   let toolTimeouts = 0;
   if (config.tools_enabled && prompt.expects_tools) {
-    toolCalls = Math.floor(1 + seededRandom() * 5);
+    // More realistic tool call distribution based on prompt complexity
+    // Simple prompts: 1-2 calls, complex prompts: 2-8 calls
+    const isComplexPrompt = prompt.family.includes("long") || 
+                           prompt.family.includes("doc_grounded") ||
+                           promptTokens > 500;
+    
+    if (isComplexPrompt) {
+      // Complex: 2-8 tool calls with bias toward 3-5
+      const roll = seededRandom();
+      if (roll < 0.6) {
+        toolCalls = Math.floor(3 + seededRandom() * 3); // 3-5 (60%)
+      } else {
+        toolCalls = Math.floor(2 + seededRandom() * 7); // 2-8 (40%)
+      }
+    } else {
+      // Simple: 1-3 tool calls, mostly 1-2
+      toolCalls = Math.floor(1 + seededRandom() * (seededRandom() < 0.7 ? 2 : 3));
+    }
+    
     // More realistic timeout rate: 1-3% chance (was 5-18%)
     const timeoutChance = 0.01 + seededRandom() * 0.02;
     if (seededRandom() < timeoutChance) {
