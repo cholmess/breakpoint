@@ -182,9 +182,38 @@ export default function Dashboard() {
               onConfigAChange={setConfigA}
               onConfigBChange={setConfigB}
             />
-<<<<<<< HEAD
+            {/* Run mode: simulate (default) or real API calls */}
             <Card className="py-3 glass-card">
               <CardContent className="p-4">
+                <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
+                  Run Mode
+                </div>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setRunMode("simulate")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      runMode === "simulate"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Simulate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRunMode("real")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      runMode === "real"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Real API
+                  </button>
+                </div>
                 <Button
                   onClick={runSimulation}
                   disabled={status === "running"}
@@ -195,30 +224,6 @@ export default function Dashboard() {
                 </Button>
               </CardContent>
             </Card>
-=======
-            {/* Run mode: simulate (default) or real API calls */}
-            <div className="rounded-lg border bg-card p-3">
-              <label className="text-sm font-medium mb-2 block">Run mode</label>
-              <select
-                value={runMode}
-                onChange={(e) => setRunMode(e.target.value as "simulate" | "real")}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                disabled={status === "running"}
-              >
-                <option value="simulate">Simulate (no API keys)</option>
-                <option value="real">Real (call LLM APIs)</option>
-              </select>
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {runMode === "simulate" ? "Uses generated telemetry." : "Requires API keys in .env."}
-              </p>
-            </div>
-            <PromptSelector
-              selected={selectedPrompt}
-              onSelect={setSelectedPrompt}
-              onRunSimulation={runSimulation}
-              isRunning={status === "running"}
-            />
->>>>>>> origin/main
           </div>
 
           {/* Middle Column - Traffic Light & Probability */}
