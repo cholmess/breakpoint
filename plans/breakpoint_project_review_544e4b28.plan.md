@@ -37,7 +37,7 @@ todos:
     status: pending
   - id: s3-run-e2e-verification
     content: "[All] Run full pipeline (probes -> analyze) and verify all outputs are generated correctly"
-    status: pending
+    status: completed
 isProject: false
 ---
 
