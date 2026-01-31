@@ -169,6 +169,12 @@ Allocate the 5 identified problems into detailed, fixable tasks distributed amon
 - If Config A has 10% failures and Config B has 50%, Safer Choice shows ~99% for A
 - Percentage flips correctly when comparing B vs A
 
+**Completion note (Emil left early; completed by Chris):**
+
+- **Task 2:** Run-simulation already passes `trialsPerConfig` from `computeTrialsPerConfig(results)` to `runAnalysis()`, so failure rates use actual probe counts. Added unit test E3: different configs show different failure rates when k/n differ.
+- **Task 3a:** Added `ci_wilson?: [number, number]` to `ConfigStats` in [types/dashboard.ts](types/dashboard.ts). Integration test now asserts `runAnalysis()` attaches `ci_wilson` for each config.
+- **Task 2b:** ProbabilityCard display filtering (selected configs only) was fixed earlier. Added unit tests: B clearly safer → `pASafer < 0.5`; similar configs → P(A safer) near 50%.
+
 ---
 
 ## Yufei (Person C) - Frontend + Story Engineer
@@ -337,9 +343,9 @@ flowchart TD
 ## Task Checklist
 
 - [ ] **Chris:** Fix 90% stuck issue - add progress callback to probe runner, improve client-side estimation, add timeout handling
-- [ ] **Emil:** Fix failure rate percentages - audit totalTrials value, fix estimatePhat() edge cases, add unit tests
-- [ ] **Emil:** Fix CI calculations - debug CI computation, fix type definition mismatch, ensure config-specific CIs
-- [ ] **Emil:** Fix Safer Choice percentage - verify Bayesian comparison, fix display matching logic
+- [x] **Emil:** Fix failure rate percentages - audit totalTrials value, fix estimatePhat() edge cases, add unit tests
+- [x] **Emil:** Fix CI calculations - debug CI computation, fix type definition mismatch, ensure config-specific CIs
+- [x] **Emil:** Fix Safer Choice percentage - verify Bayesian comparison, fix display matching logic
 - [ ] **Yufei:** Fix horizontal slider bug - investigate CSS transform conflict, add debounce, fix overflow
 - [ ] **Yufei:** Fix confidence band display - verify data binding, fix Y-axis domain, ensure chart updates
 - [ ] **Yufei:** Add HELP tab - create dialog component, add button to UI, write help content

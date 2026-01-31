@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
   const [runMode, setRunMode] = useState<"simulate" | "real">("simulate");
+  const [runSize, setRunSize] = useState<"quick" | "full">("quick");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
   
   // Data from API
@@ -57,6 +58,38 @@ export default function Dashboard() {
   // Store the configs that were actually used in the last simulation
   const [simulatedConfigA, setSimulatedConfigA] = useState<Config | null>(null);
   const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
+
+  // Which API keys are set (for Real API mode warning)
+  const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean } | null>(null);
+
+  // When Real API is selected, check which keys are set
+  useEffect(() => {
+    if (runMode !== "real") {
+      setApiKeysCheck(null);
+      return;
+    }
+    fetch("/api/check-api-keys")
+      .then((r) => r.json())
+      .then(setApiKeysCheck)
+      .catch(() => setApiKeysCheck(null));
+  }, [runMode]);
+
+  // Infer provider from model name (matches server-side logic)
+  const providerForModel = (model: string): "openai" | "gemini" | "manus" | null => {
+    const m = (model || "").toLowerCase();
+    if (m.startsWith("gpt-") || m.startsWith("o1-")) return "openai";
+    if (m.startsWith("gemini-")) return "gemini";
+    if (m.startsWith("manus-")) return "manus";
+    return null;
+  };
+
+  const needsOpenai = providerForModel(configA.model) === "openai" || providerForModel(configB.model) === "openai";
+  const needsGemini = providerForModel(configA.model) === "gemini" || providerForModel(configB.model) === "gemini";
+  const needsManus = providerForModel(configA.model) === "manus" || providerForModel(configB.model) === "manus";
+  const missingKey =
+    runMode === "real" &&
+    apiKeysCheck &&
+    ((needsOpenai && !apiKeysCheck.openai) || (needsGemini && !apiKeysCheck.gemini) || (needsManus && !apiKeysCheck.manus));
 
   // Fetch data from API routes
   useEffect(() => {
@@ -94,18 +127,43 @@ export default function Dashboard() {
     setError(null);
     setProgress(0);
     
-    // Estimate progress based on typical probe count (200 prompts x 2 configs = 400 probes)
-    // Show estimated time: ~30 seconds for 400 probes
-    const estimatedProbes = 400;
+    // Calculate estimated time and increment rate based on mode + run size
+    // Quick: 20 prompts × 2 configs = 40 probes. Full: 200 × 2 = 400 probes
+    const probeCount = runSize === "quick" ? 40 : 400;
+    const estimatedTimeMs =
+      runMode === "simulate"
+        ? runSize === "quick"
+          ? 5000   // 40 probes batched ~5s
+          : 20000  // 400 probes ~20s
+        : runSize === "quick"
+          ? 30000  // 40 probes real ~30s with 20 concurrent
+          : 50000; // 400 probes real ~50s with increased concurrency
+    const progressCap = 95; // Allow progress up to 95%, then wait for completion
+    const updateIntervalMs = 600; // Update every 600ms
+    const incrementsToReachCap = (estimatedTimeMs / updateIntervalMs) * (progressCap / 100);
+    const incrementPerUpdate = progressCap / incrementsToReachCap;
+    
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        // Simulate progress up to 90%, then wait for actual completion
-        if (prev < 90) {
-          return prev + 2; // Increment by 2% every ~600ms
+        // Increment progress up to cap, then wait for actual completion
+        if (prev < progressCap) {
+          const next = prev + incrementPerUpdate;
+          // Round to 1 decimal place to avoid floating-point precision issues
+          const rounded = Math.round(next * 10) / 10;
+          return rounded > progressCap ? progressCap : rounded;
         }
         return prev;
       });
-    }, 600);
+    }, updateIntervalMs);
+    
+    // Set timeout with buffer (2x estimated time: 40s for simulate, 7min for real)
+    const timeoutMs = estimatedTimeMs * 2;
+    const timeoutId = setTimeout(() => {
+      clearInterval(progressInterval);
+      setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
+      setStatus("idle");
+      setProgress(0);
+    }, timeoutMs);
     
     try {
       const response = await fetch("/api/run-simulation", {
@@ -115,11 +173,13 @@ export default function Dashboard() {
           configA,
           configB,
           promptFamily: "all",
+          runSize,
           seed: 42,
           mode: runMode,
         }),
       });
       
+      clearTimeout(timeoutId);
       clearInterval(progressInterval);
       setProgress(100);
 
@@ -137,12 +197,13 @@ export default function Dashboard() {
       setSimulatedConfigB(data.configB || configB);
       setStatus("success");
     } catch (err) {
+      clearTimeout(timeoutId);
       clearInterval(progressInterval);
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
     }
-  }, [configA, configB, runMode]);
+  }, [configA, configB, runMode, runSize]);
 
   return (
     <div className="min-h-screen gradient-mesh">
@@ -189,7 +250,7 @@ export default function Dashboard() {
                 <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
                   Run Mode
                 </div>
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => setRunMode("simulate")}
@@ -215,9 +276,40 @@ export default function Dashboard() {
                     Real API
                   </button>
                 </div>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setRunSize("quick")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      runSize === "quick"
+                        ? "bg-primary/20 text-primary border-primary/50 dark:bg-primary/10"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Quick (20 prompts)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRunSize("full")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      runSize === "full"
+                        ? "bg-primary/20 text-primary border-primary/50 dark:bg-primary/10"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Full (200 prompts)
+                  </button>
+                </div>
+                {missingKey && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mb-3 leading-relaxed">
+                    Missing API key(s) for your selected configs. Copy <code className="text-xs bg-muted px-1 rounded">.env.example</code> to <code className="text-xs bg-muted px-1 rounded">.env</code> in the project root and add the keys. See SETUP.md.
+                  </p>
+                )}
                 <Button
                   onClick={runSimulation}
-                  disabled={status === "running"}
+                  disabled={status === "running" || Boolean(missingKey)}
                   className="w-full bg-[#25924d] hover:bg-[#25924d]/90 text-white"
                 >
                   <Play className="h-3.5 w-3.5 mr-1.5" />
@@ -241,7 +333,14 @@ export default function Dashboard() {
             ) : status === "running" ? (
               <div className="text-center py-8 space-y-4">
                 <div className="text-base text-muted-foreground mb-4 leading-relaxed">
-                  Running simulation... (est. 30s for ~400 probes)
+                  {progress >= 95 
+                    ? "Finalizing results..." 
+                    : `Running simulation... (est. ${
+                        runMode === "simulate"
+                          ? runSize === "quick" ? "~5s" : "~20s"
+                          : runSize === "quick" ? "~30s" : "~50s"
+                      } for ~${runSize === "quick" ? "40" : "400"} probes)`
+                  }
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                   <div 
@@ -249,7 +348,10 @@ export default function Dashboard() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <div className="text-sm text-muted-foreground leading-relaxed">{progress}%</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  {progress.toFixed(1)}%
+                  {progress >= 95 && <span className="ml-2 text-xs">(processing...)</span>}
+                </div>
               </div>
             ) : error ? (
               <div className="text-center py-8 space-y-3">

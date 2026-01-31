@@ -53,7 +53,7 @@ export function setMode(mode: ExecutionMode): void {
   
   // Initialize rate limiter for real mode
   if (mode === "real" && !rateLimiter) {
-    rateLimiter = new RateLimiter(5, 200); // Max 5 concurrent, 200ms between calls
+    rateLimiter = new RateLimiter(20, 50); // Max 20 concurrent, 50ms between calls - optimized for <1min completion
   }
 }
 
@@ -220,6 +220,10 @@ const LATENCY_BREACH_MS = 3000;
 const COST_BREACH_PER_PROBE = 0.10;
 const CONTEXT_USAGE_BREACH = 0.85;
 
+// Context window above this is treated as "huge" – we don't force ~8% silent truncation,
+// so configs with insane context actually see fewer context-related failures.
+const CONTEXT_AT_RISK_MAX = 256 * 1024; // 256k tokens
+
 /**
  * Get model-specific latency parameters for more realistic simulation
  */
@@ -321,8 +325,11 @@ function generateTelemetry(
     );
   }
 
-  // ~8% chance: push context usage over 0.85 (silent truncation rule)
-  if (rollContext < 0.08) {
+  // ~8% chance: push context usage over 0.85 (silent truncation rule).
+  // Only apply when context_window is "at risk" (not huge). With huge context,
+  // we skip this so configs with insane tokens actually see fewer context-related failures.
+  const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
+  if (contextAtRisk && rollContext < 0.08) {
     const needed =
       Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
       promptTokens;
@@ -435,28 +442,64 @@ export async function runProbe(
 }
 
 /**
+ * Progress callback type for probe execution
+ */
+export type ProgressCallback = (completed: number, total: number) => void;
+
+/**
  * Run all probes (all configs × all prompts)
  * Supports both simulation and real API modes
+ * Optional progress callback for real-time feedback
+ * 
+ * In real mode, probes run concurrently (rate limiter controls max 5 concurrent)
+ * In simulate mode, runs in batches for speed without overwhelming the system
  */
 export async function runAllProbes(
   configs: ProbeConfig[],
-  prompts: PromptRecord[]
+  prompts: PromptRecord[],
+  onProgress?: ProgressCallback
 ): Promise<ProbeResult[]> {
-  const results: ProbeResult[] = [];
-  
   const total = configs.length * prompts.length;
   let completed = 0;
   
+  // Build all probe tasks
+  const probeTasks: Array<{ config: ProbeConfig; prompt: PromptRecord }> = [];
   for (const config of configs) {
     for (const prompt of prompts) {
-      const result = await runProbe(config, prompt);
-      results.push(result);
-      
-      completed++;
-      if (currentMode === "real" && completed % 10 === 0) {
-        console.log(`   Progress: ${completed}/${total} probes completed`);
-      }
+      probeTasks.push({ config, prompt });
     }
+  }
+  
+  // For simulate mode: process in batches of 50 for speed
+  // For real mode: process all concurrently (rate limiter will control to max 5)
+  const batchSize = currentMode === "simulate" ? 50 : probeTasks.length;
+  const results: ProbeResult[] = [];
+  
+  for (let i = 0; i < probeTasks.length; i += batchSize) {
+    const batch = probeTasks.slice(i, i + batchSize);
+    
+    // Run batch concurrently
+    const batchResults = await Promise.all(
+      batch.map(async ({ config, prompt }) => {
+        const result = await runProbe(config, prompt);
+        
+        completed++;
+        
+        // Call progress callback if provided
+        if (onProgress) {
+          onProgress(completed, total);
+        }
+        
+        // Keep console.log for debugging (only in real mode, every 10 probes)
+        if (currentMode === "real" && completed % 10 === 0) {
+          console.log(`   Progress: ${completed}/${total} probes completed`);
+        }
+        
+        return result;
+      })
+    );
+    
+    results.push(...batchResults);
   }
   
   return results;

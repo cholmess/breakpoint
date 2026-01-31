@@ -17,8 +17,15 @@ export function ProbabilityCard({
   selectedConfigB,
   isRunning,
 }: ProbabilityCardProps) {
+  // Filter comparisons to only show those involving the selected configs
+  const filteredComparisons = comparisons.filter(
+    (c) =>
+      (c.config_a === selectedConfigA || c.config_b === selectedConfigA) &&
+      (c.config_a === selectedConfigB || c.config_b === selectedConfigB)
+  );
+  
   // Find the comparison for the selected configs
-  const currentComparison = comparisons.find(
+  const currentComparison = filteredComparisons.find(
     (c) =>
       (c.config_a === selectedConfigA && c.config_b === selectedConfigB) ||
       (c.config_a === selectedConfigB && c.config_b === selectedConfigA)
@@ -29,8 +36,8 @@ export function ProbabilityCard({
     ? currentComparison.config_a === selectedConfigA
       ? currentComparison.p_a_safer
       : 1 - currentComparison.p_a_safer
-    : comparisons.length > 0
-    ? comparisons[0].p_a_safer
+    : filteredComparisons.length > 0
+    ? filteredComparisons[0].p_a_safer
     : 0.5;
 
   const isIndeterminate = pValue === 0.5;
@@ -104,13 +111,13 @@ export function ProbabilityCard({
         </div>
 
         {/* Show all comparisons if there are multiple */}
-        {comparisons.length > 1 && (
+        {filteredComparisons.length > 1 && (
           <div className="mt-6 pt-4 border-t border-border">
             <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
               All Comparisons
             </div>
             <div className="space-y-2 max-h-32 overflow-y-auto">
-              {comparisons.map((comp, idx) => {
+              {filteredComparisons.map((comp, idx) => {
                 const isCurrent =
                   (comp.config_a === selectedConfigA &&
                     comp.config_b === selectedConfigB) ||

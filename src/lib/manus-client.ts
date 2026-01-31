@@ -29,7 +29,7 @@ export async function callManusAPI(
 
   if (!apiKey) {
     throw new Error(
-      "MANUS_API_KEY_CH or MANUS_API_KEY not found in environment. Please set it in .env file."
+      "MANUS_API_KEY (or MANUS_API_KEY_CH) not found. Copy .env.example to .env in the project root and add your key. Get a key: https://open.manus.ai/docs"
     );
   }
 

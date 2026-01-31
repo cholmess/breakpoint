@@ -19,8 +19,9 @@ import {
   runComparisons,
   runDistributions,
   modeDistributions,
+  computeTrialsPerConfig,
 } from "../src/lib/analysis";
-import type { FailureEvent, PromptRecord } from "../src/types";
+import type { FailureEvent, PromptRecord, ProbeResult } from "../src/types";
 
 const FIXTURE_PATH = path.join(__dirname, "fixtures", "failure-events.json");
 
@@ -199,7 +200,51 @@ function testCompareConfigs(): void {
   const noData = { config_id: "X", k: 0, n: 0, phat: 0 };
   const { pASafer: pIndet } = compareConfigs(noData, a);
   assert.strictEqual(pIndet, 0.5, "n=0 returns indeterminate 0.5");
+
+  // B clearly safer than A (low k for B, high k for A) -> pASafer < 0.5
+  const aHigh = { config_id: "A", k: 9, n: 10, phat: 0.9 };
+  const bLow = { config_id: "B", k: 1, n: 10, phat: 0.1 };
+  const { pASafer: pBSafer } = compareConfigs(aHigh, bLow);
+  assert.ok(pBSafer < 0.5, "when B is clearly safer, P(A safer) should be < 0.5");
+
+  // Similar failure rates -> expect ~50%
+  const aMid = { config_id: "A", k: 5, n: 10, phat: 0.5 };
+  const bMid = { config_id: "B", k: 5, n: 10, phat: 0.5 };
+  const { pASafer: pSimilar } = compareConfigs(aMid, bMid);
+  assert.ok(Math.abs(pSimilar - 0.5) < 0.15, "similar configs should give P(A safer) near 50%");
+
   console.log("  compareConfigs: ok");
+}
+
+// --- computeTrialsPerConfig ---
+function testComputeTrialsPerConfig(): void {
+  const mockTelemetry = {
+    prompt_id: "",
+    config_id: "",
+    prompt_tokens: 0,
+    retrieved_tokens: 0,
+    completion_tokens: 0,
+    latency_ms: 0,
+    tool_calls: 0,
+    tool_timeouts: 0,
+    timestamp: "",
+  };
+  const mockResults: ProbeResult[] = [
+    { prompt_id: "p1", config_id: "A", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p2", config_id: "A", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p3", config_id: "A", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p1", config_id: "B", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p2", config_id: "B", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+  ];
+  const trials = computeTrialsPerConfig(mockResults);
+  assert.strictEqual(trials["A"], 3);
+  assert.strictEqual(trials["B"], 2);
+  assert.strictEqual(Object.keys(trials).length, 2);
+
+  const emptyTrials = computeTrialsPerConfig([]);
+  assert.deepStrictEqual(emptyTrials, {});
+
+  console.log("  computeTrialsPerConfig: ok");
 }
 
 // --- modeDistributions ---
@@ -233,8 +278,10 @@ function testIntegration(): void {
   for (const stats of Object.values(analysisOutput.configs)) {
     assert.ok(stats.ci_bootstrap);
     assert.ok(stats.ci_bayesian);
+    assert.ok(stats.ci_wilson, "runAnalysis must attach ci_wilson for confidence band");
     assert.strictEqual(stats.ci_bootstrap!.length, 2);
     assert.strictEqual(stats.ci_bayesian!.length, 2);
+    assert.strictEqual(stats.ci_wilson!.length, 2);
   }
 
   const statsList = Object.values(analysisOutput.configs);
@@ -261,6 +308,31 @@ function testIntegration(): void {
   assert.strictEqual(zeroFailStats.n, prompts.length);
   assert.strictEqual(zeroFailStats.phat, 0);
 
+  // E2: trialsPerConfig overrides prompts.length for accurate per-config n
+  const trialsPerConfig = { A: 100, B: 80 };
+  const analysisWithTrials = runAnalysis(events, prompts, ["A", "B"], trialsPerConfig);
+  assert.strictEqual(analysisWithTrials.configs["A"].n, 100);
+  assert.strictEqual(analysisWithTrials.configs["B"].n, 80);
+  assert.strictEqual(analysisWithTrials.configs["A"].phat, analysisWithTrials.configs["A"].k / 100);
+  assert.strictEqual(analysisWithTrials.configs["B"].phat, analysisWithTrials.configs["B"].k / 80);
+
+  // E3: different configs show different failure rates when k/n differ (Task 2 acceptance)
+  const diffTrials = { cfg1: 20, cfg2: 20 };
+  const diffEvents: FailureEvent[] = [
+    { prompt_id: "p1", config_id: "cfg1", failure_mode: "latency_breach", severity: "MED", breaks_at: "", signal: {}, timestamp: "" },
+    { prompt_id: "p2", config_id: "cfg1", failure_mode: "latency_breach", severity: "MED", breaks_at: "", signal: {}, timestamp: "" },
+    { prompt_id: "p3", config_id: "cfg1", failure_mode: "latency_breach", severity: "MED", breaks_at: "", signal: {}, timestamp: "" },
+    { prompt_id: "p1", config_id: "cfg2", failure_mode: "latency_breach", severity: "MED", breaks_at: "", signal: {}, timestamp: "" },
+  ];
+  const analysisDiff = runAnalysis(diffEvents, prompts, ["cfg1", "cfg2"], diffTrials);
+  assert.strictEqual(analysisDiff.configs["cfg1"].k, 3);
+  assert.strictEqual(analysisDiff.configs["cfg1"].n, 20);
+  assert.strictEqual(analysisDiff.configs["cfg1"].phat, 3 / 20);
+  assert.strictEqual(analysisDiff.configs["cfg2"].k, 1);
+  assert.strictEqual(analysisDiff.configs["cfg2"].n, 20);
+  assert.strictEqual(analysisDiff.configs["cfg2"].phat, 1 / 20);
+  assert.notStrictEqual(analysisDiff.configs["cfg1"].phat, analysisDiff.configs["cfg2"].phat);
+
   const emptyDist = runDistributions([], prompts);
   assert.deepStrictEqual(emptyDist.by_failure_mode, {});
   assert.deepStrictEqual(emptyDist.by_prompt_family, {});
@@ -274,6 +346,7 @@ function testIntegration(): void {
 function run(): void {
   console.log("Person B statistics tests\n");
   testEstimatePhat();
+  testComputeTrialsPerConfig();
   testBootstrapCI();
   testWilsonScoreCI();
   testBayesianBetaCI();
