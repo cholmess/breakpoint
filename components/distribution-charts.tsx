@@ -109,10 +109,10 @@ export function DistributionCharts({
                       borderRadius: "6px",
                       fontSize: "10px",
                     }}
-                    formatter={(value: number, name: string) => {
-                      if (name === "count") return [value, "Count"];
-                      if (name === "proportion") return [`${value}%`, "Proportion"];
-                      return [value, name];
+                    formatter={(value: number | undefined, name: string | undefined) => {
+                      if (name === "count") return [value ?? 0, "Count"];
+                      if (name === "proportion") return [`${value ?? 0}%`, "Proportion"];
+                      return [value ?? 0, name ?? ""];
                     }}
                   />
                   <Legend
@@ -178,10 +178,10 @@ export function DistributionCharts({
                       borderRadius: "6px",
                       fontSize: "10px",
                     }}
-                    formatter={(value: number, name: string) => {
-                      if (name === "count") return [value, "Count"];
-                      if (name === "proportion") return [`${value}%`, "Proportion"];
-                      return [value, name];
+                    formatter={(value: number | undefined, name: string | undefined) => {
+                      if (name === "count") return [value ?? 0, "Count"];
+                      if (name === "proportion") return [`${value ?? 0}%`, "Proportion"];
+                      return [value ?? 0, name ?? ""];
                     }}
                   />
                   <Legend
