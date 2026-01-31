@@ -89,3 +89,39 @@ export interface Timeline {
   configs: Record<string, BreakPoint[]>; // Grouped by config_id
   break_points: BreakPoint[]; // Ordered list of first HIGH severity failure per config
 }
+
+// Person B: Probability + Analytics
+export interface Stats {
+  config_id: string;
+  k: number; // number of failures
+  n: number; // total trials
+  phat: number; // failure probability estimate (k/n)
+  ci_bootstrap?: [number, number]; // [lower, upper] bootstrap CI
+  ci_bayesian?: [number, number]; // [lower, upper] Bayesian CI
+}
+
+export interface AnalysisOutput {
+  configs: Record<string, Stats>; // keyed by config_id
+}
+
+export interface ComparisonResult {
+  config_a: string;
+  config_b: string;
+  p_a_safer: number; // P(A safer than B)
+}
+
+export interface ComparisonsOutput {
+  comparisons: ComparisonResult[];
+}
+
+export interface DistributionEntry {
+  failure_mode?: FailureMode; // optional for by_prompt_family entries
+  family?: string;
+  count: number;
+  proportion: number;
+}
+
+export interface DistributionsOutput {
+  by_failure_mode: Record<string, DistributionEntry>; // keyed by FailureMode
+  by_prompt_family: Record<string, DistributionEntry>; // keyed by family
+}

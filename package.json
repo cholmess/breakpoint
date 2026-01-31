@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test:statistics": "npx tsx tests/statistics.test.ts",
     "probes": "tsx src/cli/run-probes.ts",
+    "analyze": "tsx src/cli/run-analysis.ts",
     "dev": "next dev",
     "build": "next build",
     "start": "next start"
