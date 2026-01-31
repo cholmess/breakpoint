@@ -33,8 +33,11 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
             <SelectContent>
               <SelectItem value="gpt-4">GPT-4</SelectItem>
               <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-              <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-              <SelectItem value="claude-3">Claude 3</SelectItem>
+              <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+              <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+              <SelectItem value="manus-1.6">Manus 1.6</SelectItem>
+              <SelectItem value="manus-1.6-lite">Manus 1.6 Lite</SelectItem>
+              <SelectItem value="manus-1.6-max">Manus 1.6 Max</SelectItem>
             </SelectContent>
           </Select>
         </div>

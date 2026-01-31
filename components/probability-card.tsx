@@ -61,10 +61,7 @@ export function ProbabilityCard({
       <CardContent className="p-6">
         <div className="text-center mb-4">
           <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
-            Pairwise Comparison
-          </div>
-          <div className="text-xs text-muted-foreground mb-4">
-            {configLabel}
+            Which Configuration is Safer?
           </div>
           <div
             className={cn(
@@ -94,9 +91,16 @@ export function ProbabilityCard({
                   isSafe ? "bg-[#25924d]" : "bg-destructive"
                 )}
               />
-              {isSafe ? "Safer" : "Higher Risk"}
+              {isSafe ? "Safer Choice" : "Higher Risk"}
             </div>
           )}
+          <div className="mt-4 text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto px-2">
+            {isIndeterminate
+              ? "Both configurations show similar reliability. Consider other factors like cost or speed."
+              : isSafe
+              ? `This percentage shows how confident we are that ${selectedConfigA || "Config A"} is more reliable than ${selectedConfigB || "Config B"}.`
+              : `This percentage indicates the probability that ${selectedConfigB || "Config B"} has a higher failure risk than ${selectedConfigA || "Config A"}.`}
+          </div>
         </div>
 
         {/* Show all comparisons if there are multiple */}

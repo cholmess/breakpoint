@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Probabilistic Failure Simulator | AI Observability',
+  title: 'BreakPoint | AI Observability',
   description: 'High-density AI observability dashboard for probabilistic failure simulation and A/B testing of LLM configurations',
   generator: 'v0.app',
   icons: {
