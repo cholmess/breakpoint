@@ -26,6 +26,7 @@ import {
   runAnalysis,
   runComparisons,
   runDistributions,
+  computeTrialsPerConfig,
 } from "@/src/lib/analysis";
 import { clearTelemetry } from "@/src/lib/telemetry-logger";
 import type { ProbeConfig, PromptRecord } from "@/src/types";
@@ -65,6 +66,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Normalize config fields to numbers (form inputs can send strings)
+    const normalizeConfig = (c: ProbeConfig): ProbeConfig => ({
+      ...c,
+      context_window: Number(c.context_window) || 0,
+      top_k: Number(c.top_k) || 0,
+      chunk_size: Number(c.chunk_size) || 0,
+      max_output_tokens: Number(c.max_output_tokens) || 0,
+      temperature: Number(c.temperature) ?? 0,
+      cost_per_1k_tokens: Number(c.cost_per_1k_tokens) ?? 0,
+      tools_enabled: Boolean(c.tools_enabled),
+    });
+    const normalizedA = normalizeConfig(configA as ProbeConfig);
+    const normalizedB = normalizeConfig(configB as ProbeConfig);
+
+    // Log received configs so we can verify UI sends updated values
+    console.log("[run-simulation] configA:", {
+      id: normalizedA.id,
+      tools_enabled: normalizedA.tools_enabled,
+      context_window: normalizedA.context_window,
+    });
+    console.log("[run-simulation] configB:", {
+      id: normalizedB.id,
+      tools_enabled: normalizedB.tools_enabled,
+      context_window: normalizedB.context_window,
+    });
+
     const required = [
       "id",
       "model",
@@ -77,7 +104,7 @@ export async function POST(req: NextRequest) {
       "cost_per_1k_tokens",
     ];
     for (const key of required) {
-      if (!(key in configA) || !(key in configB)) {
+      if (!(key in normalizedA) || !(key in normalizedB)) {
         return NextResponse.json(
           { error: `Both configs must have "${key}"` },
           { status: 400 }
@@ -112,7 +139,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const configs: ProbeConfig[] = [configA as ProbeConfig, configB as ProbeConfig];
+    const configs: ProbeConfig[] = [normalizedA, normalizedB];
     const results = await runAllProbes(configs, prompts);
     const configMap = new Map<string, ProbeConfig>(
       configs.map((c) => [c.id, c])
@@ -122,7 +149,8 @@ export async function POST(req: NextRequest) {
     const timeline = buildBreakFirstTimeline(events);
 
     const configIds = configs.map(c => c.id);
-    const analysis = runAnalysis(events, prompts, configIds);
+    const trialsPerConfig = computeTrialsPerConfig(results);
+    const analysis = runAnalysis(events, prompts, configIds, trialsPerConfig);
     const statsList = Object.values(analysis.configs);
     const comparisons = runComparisons(statsList);
     const distributions = runDistributions(events, prompts);
@@ -132,8 +160,8 @@ export async function POST(req: NextRequest) {
       comparisons,
       distributions,
       timeline,
-      configA: configA,  // Return the actual configs used in simulation
-      configB: configB,
+      configA: normalizedA,
+      configB: normalizedB,
     });
   } catch (err) {
     console.error("Run simulation error:", err);

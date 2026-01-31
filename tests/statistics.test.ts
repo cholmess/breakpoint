@@ -19,8 +19,9 @@ import {
   runComparisons,
   runDistributions,
   modeDistributions,
+  computeTrialsPerConfig,
 } from "../src/lib/analysis";
-import type { FailureEvent, PromptRecord } from "../src/types";
+import type { FailureEvent, PromptRecord, ProbeResult } from "../src/types";
 
 const FIXTURE_PATH = path.join(__dirname, "fixtures", "failure-events.json");
 
@@ -202,6 +203,37 @@ function testCompareConfigs(): void {
   console.log("  compareConfigs: ok");
 }
 
+// --- computeTrialsPerConfig ---
+function testComputeTrialsPerConfig(): void {
+  const mockTelemetry = {
+    prompt_id: "",
+    config_id: "",
+    prompt_tokens: 0,
+    retrieved_tokens: 0,
+    completion_tokens: 0,
+    latency_ms: 0,
+    tool_calls: 0,
+    tool_timeouts: 0,
+    timestamp: "",
+  };
+  const mockResults: ProbeResult[] = [
+    { prompt_id: "p1", config_id: "A", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p2", config_id: "A", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p3", config_id: "A", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p1", config_id: "B", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+    { prompt_id: "p2", config_id: "B", telemetry: mockTelemetry, context_usage: 0, total_tokens: 0, estimated_cost: 0 },
+  ];
+  const trials = computeTrialsPerConfig(mockResults);
+  assert.strictEqual(trials["A"], 3);
+  assert.strictEqual(trials["B"], 2);
+  assert.strictEqual(Object.keys(trials).length, 2);
+
+  const emptyTrials = computeTrialsPerConfig([]);
+  assert.deepStrictEqual(emptyTrials, {});
+
+  console.log("  computeTrialsPerConfig: ok");
+}
+
 // --- modeDistributions ---
 function testModeDistributions(): void {
   const events = loadFixture();
@@ -261,6 +293,14 @@ function testIntegration(): void {
   assert.strictEqual(zeroFailStats.n, prompts.length);
   assert.strictEqual(zeroFailStats.phat, 0);
 
+  // E2: trialsPerConfig overrides prompts.length for accurate per-config n
+  const trialsPerConfig = { A: 100, B: 80 };
+  const analysisWithTrials = runAnalysis(events, prompts, ["A", "B"], trialsPerConfig);
+  assert.strictEqual(analysisWithTrials.configs["A"].n, 100);
+  assert.strictEqual(analysisWithTrials.configs["B"].n, 80);
+  assert.strictEqual(analysisWithTrials.configs["A"].phat, analysisWithTrials.configs["A"].k / 100);
+  assert.strictEqual(analysisWithTrials.configs["B"].phat, analysisWithTrials.configs["B"].k / 80);
+
   const emptyDist = runDistributions([], prompts);
   assert.deepStrictEqual(emptyDist.by_failure_mode, {});
   assert.deepStrictEqual(emptyDist.by_prompt_family, {});
@@ -274,6 +314,7 @@ function testIntegration(): void {
 function run(): void {
   console.log("Person B statistics tests\n");
   testEstimatePhat();
+  testComputeTrialsPerConfig();
   testBootstrapCI();
   testWilsonScoreCI();
   testBayesianBetaCI();

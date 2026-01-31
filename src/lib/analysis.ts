@@ -6,6 +6,7 @@
 import type {
   FailureEvent,
   FailureMode,
+  ProbeResult,
   Stats,
   AnalysisOutput,
   ComparisonsOutput,
@@ -77,6 +78,20 @@ export function modeDistributions(
 }
 
 /**
+ * Compute actual trials per config from probe results.
+ * Use this to ensure failure rates use the true number of probes run,
+ * not a potentially mismatched prompts.length (e.g. when prompts are filtered
+ * or when some probes fail before producing results).
+ */
+export function computeTrialsPerConfig(results: ProbeResult[]): Record<string, number> {
+  const perConfig: Record<string, number> = {};
+  for (const r of results) {
+    perConfig[r.config_id] = (perConfig[r.config_id] ?? 0) + 1;
+  }
+  return perConfig;
+}
+
+/**
  * Run full analysis: per-config stats with bootstrap and Bayesian CIs.
  *
  * When the caller knows the full set of configs that were run (e.g. run-simulation with
@@ -85,14 +100,15 @@ export function modeDistributions(
  * never appear). Passing allConfigIds ensures "0% error rate" is shown correctly for
  * configs that had no failures rather than omitting them.
  *
- * totalTrials is set from prompts.length; it must match the number of probes run per
- * config (e.g. the filtered prompt list used in the run). Edge case: empty events →
- * all configs get k=0; empty prompts → totalTrials=0, n per config = max(0,k).
+ * totalTrials: By default uses prompts.length. For accurate failure rates, pass
+ * trialsPerConfig (from computeTrialsPerConfig(results)) so n matches the actual
+ * number of probes run per config. Edge case: empty events → all configs get k=0.
  */
 export function runAnalysis(
   events: FailureEvent[],
   prompts: PromptRecord[],
-  allConfigIds?: string[]
+  allConfigIds?: string[],
+  trialsPerConfig?: Record<string, number>
 ): AnalysisOutput {
   // Prefer explicit config set so configs with 0 failures are included
   const configIds = allConfigIds && allConfigIds.length > 0
@@ -103,10 +119,11 @@ export function runAnalysis(
     return { configs: {} };
   }
 
-  const totalTrials = Array.isArray(prompts) ? prompts.length : 0;
+  const defaultTrials = Array.isArray(prompts) ? prompts.length : 0;
   const configs: Record<string, Stats> = {};
 
   for (const configId of configIds) {
+    const totalTrials = trialsPerConfig?.[configId] ?? defaultTrials;
     const stats = estimatePhat(events || [], configId, totalTrials);
     stats.ci_bootstrap = bootstrapCI(stats.k, stats.n);
     stats.ci_bayesian = bayesianBetaCI(stats.k, stats.n);

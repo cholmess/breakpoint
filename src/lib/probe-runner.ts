@@ -220,6 +220,10 @@ const LATENCY_BREACH_MS = 3000;
 const COST_BREACH_PER_PROBE = 0.10;
 const CONTEXT_USAGE_BREACH = 0.85;
 
+// Context window above this is treated as "huge" – we don't force ~8% silent truncation,
+// so configs with insane context actually see fewer context-related failures.
+const CONTEXT_AT_RISK_MAX = 256 * 1024; // 256k tokens
+
 /**
  * Get model-specific latency parameters for more realistic simulation
  */
@@ -321,8 +325,11 @@ function generateTelemetry(
     );
   }
 
-  // ~8% chance: push context usage over 0.85 (silent truncation rule)
-  if (rollContext < 0.08) {
+  // ~8% chance: push context usage over 0.85 (silent truncation rule).
+  // Only apply when context_window is "at risk" (not huge). With huge context,
+  // we skip this so configs with insane tokens actually see fewer context-related failures.
+  const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
+  if (contextAtRisk && rollContext < 0.08) {
     const needed =
       Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
       promptTokens;
