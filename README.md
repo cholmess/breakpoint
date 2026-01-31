@@ -13,6 +13,41 @@ This component implements the probe runner, telemetry logging, and deterministic
 - **Rules Engine** (`src/lib/rules-engine.ts`): Evaluates deterministic rules to detect failures
 - **Timeline Builder** (`src/lib/timeline.ts`): Builds break-first timeline from failure events
 
+### Testing
+
+**1. Run the full pipeline**
+
+From the project root:
+
+```bash
+npm run probes
+```
+
+You should see:
+- Loaded 2 config(s) and 50 prompt(s)
+- Completed 100 probe(s) (2 configs × 50 prompts)
+- Detected failure events and break points
+- Three output files under `output/`
+
+**2. Check outputs**
+
+- `output/telemetry.log` – JSONL, one line per probe (100 lines)
+- `output/failure-events.json` – Array of failure events
+- `output/break-first-timeline.json` – `configs` (events per config) and `break_points` (first HIGH per config)
+
+**3. Reproducibility**
+
+Same seed → same results:
+
+```bash
+SEED=42 npm run probes
+SEED=99 npm run probes   # different failure counts / break points
+```
+
+**4. Re-run**
+
+Each run clears the previous `telemetry.log` and overwrites the JSON files. Run again anytime to regenerate.
+
 ### Usage
 
 #### Quick Start (Simulation Mode)
