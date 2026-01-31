@@ -4,18 +4,12 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Config } from "@/types/dashboard";
 
 interface ConfigFormProps {
-  config: {
-    temperature: number;
-    topK: number;
-    contextWindow: number;
-    chunkSize: number;
-    maxOutputTokens: number;
-    toolsEnabled: boolean;
-    budgetCost: number;
-  };
-  onChange: (config: ConfigFormProps["config"]) => void;
+  config: Config;
+  onChange: (config: Config) => void;
   label: string;
 }
 
@@ -28,7 +22,25 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Temperature</Label>
+          <Label className="text-xs shrink-0 w-24">Model</Label>
+          <Select
+            value={config.model}
+            onValueChange={(value) => onChange({ ...config, model: value })}
+          >
+            <SelectTrigger className="h-7 text-xs flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="gpt-4">GPT-4</SelectItem>
+              <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+              <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+              <SelectItem value="claude-3">Claude 3</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label className="text-xs shrink-0 w-24">Temperature</Label>
           <Slider
             value={[config.temperature]}
             onValueChange={([v]) => onChange({ ...config, temperature: v })}
@@ -43,27 +55,27 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Top-K</Label>
+          <Label className="text-xs shrink-0 w-24">Top-K</Label>
           <Slider
-            value={[config.topK]}
-            onValueChange={([v]) => onChange({ ...config, topK: v })}
+            value={[config.top_k]}
+            onValueChange={([v]) => onChange({ ...config, top_k: v })}
             min={1}
             max={100}
             step={1}
             className="flex-1"
           />
           <span className="text-xs font-mono w-8 text-right">
-            {config.topK}
+            {config.top_k}
           </span>
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Context</Label>
+          <Label className="text-xs shrink-0 w-24">Context Window</Label>
           <Input
             type="number"
-            value={config.contextWindow}
+            value={config.context_window}
             onChange={(e) =>
-              onChange({ ...config, contextWindow: Number(e.target.value) })
+              onChange({ ...config, context_window: Number(e.target.value) })
             }
             className="h-7 text-xs flex-1"
             placeholder="tokens"
@@ -71,56 +83,56 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Chunk Size</Label>
+          <Label className="text-xs shrink-0 w-24">Chunk Size</Label>
           <Input
             type="number"
-            value={config.chunkSize}
+            value={config.chunk_size}
             onChange={(e) =>
-              onChange({ ...config, chunkSize: Number(e.target.value) })
+              onChange({ ...config, chunk_size: Number(e.target.value) })
             }
             className="h-7 text-xs flex-1"
           />
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Max Output</Label>
+          <Label className="text-xs shrink-0 w-24">Max Output</Label>
           <Input
             type="number"
-            value={config.maxOutputTokens}
+            value={config.max_output_tokens}
             onChange={(e) =>
-              onChange({ ...config, maxOutputTokens: Number(e.target.value) })
+              onChange({ ...config, max_output_tokens: Number(e.target.value) })
             }
             className="h-7 text-xs flex-1"
           />
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Tools</Label>
+          <Label className="text-xs shrink-0 w-24">Tools</Label>
           <div className="flex-1 flex items-center gap-2">
             <Switch
-              checked={config.toolsEnabled}
-              onCheckedChange={(v) => onChange({ ...config, toolsEnabled: v })}
+              checked={config.tools_enabled}
+              onCheckedChange={(v) => onChange({ ...config, tools_enabled: v })}
             />
             <span className="text-xs text-muted-foreground">
-              {config.toolsEnabled ? "Enabled" : "Disabled"}
+              {config.tools_enabled ? "Enabled" : "Disabled"}
             </span>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-20">Budget</Label>
+          <Label className="text-xs shrink-0 w-24">Cost/1K</Label>
           <div className="flex-1 flex items-center gap-1">
             <span className="text-xs text-muted-foreground">$</span>
             <Input
               type="number"
-              value={config.budgetCost}
+              value={config.cost_per_1k_tokens}
               onChange={(e) =>
-                onChange({ ...config, budgetCost: Number(e.target.value) })
+                onChange({ ...config, cost_per_1k_tokens: Number(e.target.value) })
               }
               className="h-7 text-xs flex-1"
-              step={0.01}
+              step={0.001}
             />
-            <span className="text-xs text-muted-foreground">/1M</span>
+            <span className="text-xs text-muted-foreground">/1K</span>
           </div>
         </div>
       </div>

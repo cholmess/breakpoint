@@ -5,28 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ConfigForm } from "@/components/config-form";
 import { cn } from "@/lib/utils";
 import { RotateCcw } from "lucide-react";
+import type { Config } from "@/types/dashboard";
 
 interface FlipCardProps {
-  configA: {
-    temperature: number;
-    topK: number;
-    contextWindow: number;
-    chunkSize: number;
-    maxOutputTokens: number;
-    toolsEnabled: boolean;
-    budgetCost: number;
-  };
-  configB: {
-    temperature: number;
-    topK: number;
-    contextWindow: number;
-    chunkSize: number;
-    maxOutputTokens: number;
-    toolsEnabled: boolean;
-    budgetCost: number;
-  };
-  onConfigAChange: (config: FlipCardProps["configA"]) => void;
-  onConfigBChange: (config: FlipCardProps["configB"]) => void;
+  configA: Config;
+  configB: Config;
+  onConfigAChange: (config: Config) => void;
+  onConfigBChange: (config: Config) => void;
 }
 
 export function FlipCard({
@@ -57,15 +42,16 @@ export function FlipCard({
       >
         {/* Front - Config A */}
         <Card
-          className="w-full py-4 border-accent/50 bg-card/80 backdrop-blur-sm"
+          className="w-full py-4 config-a-bg backdrop-blur-xl"
           style={{ backfaceVisibility: "hidden" }}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-2 w-2 rounded-full bg-accent" />
-              <span className="text-xs font-medium uppercase tracking-wider">
+              <div className="h-2 w-2 rounded-full bg-[#95ccf9] shadow-[0_0_8px_rgba(149,204,249,0.6)]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#95ccf9]">
                 Configuration A
               </span>
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-[#95ccf9]/20 text-[#95ccf9]">Baseline</span>
             </div>
             <ConfigForm
               config={configA}
@@ -77,15 +63,16 @@ export function FlipCard({
 
         {/* Back - Config B */}
         <Card
-          className="absolute inset-0 w-full py-4 border-emerald/50 bg-card/80 backdrop-blur-sm [transform:rotateY(180deg)]"
+          className="absolute inset-0 w-full py-4 config-b-bg backdrop-blur-xl [transform:rotateY(180deg)]"
           style={{ backfaceVisibility: "hidden" }}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-2 w-2 rounded-full bg-emerald" />
-              <span className="text-xs font-medium uppercase tracking-wider">
+              <div className="h-2 w-2 rounded-full bg-[#25924d] shadow-[0_0_8px_rgba(37,146,77,0.6)]" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#25924d]">
                 Configuration B
               </span>
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded bg-[#25924d]/20 text-[#25924d]">Test</span>
             </div>
             <ConfigForm
               config={configB}
@@ -102,7 +89,7 @@ export function FlipCard({
           onClick={() => setIsFlipped(false)}
           className={cn(
             "h-1.5 w-6 rounded-full transition-colors",
-            !isFlipped ? "bg-accent" : "bg-border hover:bg-accent/50"
+            !isFlipped ? "bg-[#95ccf9]" : "bg-border hover:bg-[#95ccf9]/50"
           )}
           aria-label="Show Config A"
         />
@@ -111,7 +98,7 @@ export function FlipCard({
           onClick={() => setIsFlipped(true)}
           className={cn(
             "h-1.5 w-6 rounded-full transition-colors",
-            isFlipped ? "bg-emerald" : "bg-border hover:bg-emerald/50"
+            isFlipped ? "bg-[#25924d]" : "bg-border hover:bg-[#25924d]/50"
           )}
           aria-label="Show Config B"
         />

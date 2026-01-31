@@ -1,0 +1,68 @@
+// Type definitions matching JSON_SCHEMAS.md
+
+// From analysis.json
+export interface ConfigStats {
+  config_id: string;
+  k: number;
+  n: number;
+  phat: number;
+  ci_bootstrap?: [number, number];
+  ci_bayesian?: [number, number];
+}
+
+export interface AnalysisData {
+  configs: {
+    [configId: string]: ConfigStats;
+  };
+}
+
+// From comparisons.json
+export interface Comparison {
+  config_a: string;
+  config_b: string;
+  p_a_safer: number;
+}
+
+export interface ComparisonsData {
+  comparisons: Comparison[];
+}
+
+// From distributions.json
+export interface DistributionEntry {
+  failure_mode?: string;
+  family?: string;
+  count: number;
+  proportion: number;
+}
+
+export interface DistributionsData {
+  by_failure_mode: {
+    [key: string]: DistributionEntry & { failure_mode: string };
+  };
+  by_prompt_family: {
+    [key: string]: DistributionEntry & { family: string };
+  };
+}
+
+// Config file structure
+export interface Config {
+  id: string;
+  model: string;
+  context_window: number;
+  top_k: number;
+  chunk_size: number;
+  max_output_tokens: number;
+  tools_enabled: boolean;
+  temperature: number;
+  cost_per_1k_tokens: number;
+}
+
+// Failure mode enum
+export type FailureMode = 
+  | 'context_overflow'
+  | 'silent_truncation_risk'
+  | 'latency_breach'
+  | 'cost_runaway'
+  | 'tool_timeout_risk'
+  | 'retrieval_noise_risk';
+

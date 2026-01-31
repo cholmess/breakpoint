@@ -4,24 +4,24 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #fcfaf5;
-  --foreground: #222f29;
-  --card: #ffffff;
-  --card-foreground: #222f29;
-  --popover: #ffffff;
-  --popover-foreground: #222f29;
-  --primary: #222f29;
-  --primary-foreground: #f1f7fd;
-  --secondary: #d8f0f5;
-  --secondary-foreground: #222f29;
-  --muted: #e8f4f7;
-  --muted-foreground: #5a6b65;
+  --background: #0a0f0d;
+  --foreground: #e8f4f7;
+  --card: #111916;
+  --card-foreground: #e8f4f7;
+  --popover: #111916;
+  --popover-foreground: #e8f4f7;
+  --primary: #99e4f2;
+  --primary-foreground: #0a0f0d;
+  --secondary: #1a2420;
+  --secondary-foreground: #e8f4f7;
+  --muted: #1a2420;
+  --muted-foreground: #6b8a80;
   --accent: #95ccf9;
-  --accent-foreground: #222f29;
+  --accent-foreground: #0a0f0d;
   --destructive: #dc2626;
   --destructive-foreground: #fef2f2;
-  --border: #d8f0f5;
-  --input: #d8f0f5;
+  --border: #1f2e28;
+  --input: #1f2e28;
   --ring: #95ccf9;
   --chart-1: #95ccf9;
   --chart-2: #25924d;
@@ -29,13 +29,13 @@
   --chart-4: #99e4f2;
   --chart-5: #fcb3d0;
   --radius: 0.5rem;
-  --sidebar: #f1f7fd;
-  --sidebar-foreground: #222f29;
-  --sidebar-primary: #222f29;
-  --sidebar-primary-foreground: #f1f7fd;
-  --sidebar-accent: #d8f0f5;
-  --sidebar-accent-foreground: #222f29;
-  --sidebar-border: #d8f0f5;
+  --sidebar: #111916;
+  --sidebar-foreground: #e8f4f7;
+  --sidebar-primary: #99e4f2;
+  --sidebar-primary-foreground: #0a0f0d;
+  --sidebar-accent: #1a2420;
+  --sidebar-accent-foreground: #e8f4f7;
+  --sidebar-border: #1f2e28;
   --sidebar-ring: #95ccf9;
   --emerald: #25924d;
   --emerald-light: #bdf6e0;
@@ -78,8 +78,8 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-mono), 'JetBrains Mono', monospace;
+  --font-mono: var(--font-mono), 'JetBrains Mono', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -127,5 +127,140 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Gradient Mesh Background - Dark */
+.gradient-mesh {
+  background: 
+    radial-gradient(ellipse 80% 50% at 20% 30%, rgba(149, 204, 249, 0.15) 0px, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 10%, rgba(37, 146, 77, 0.2) 0px, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 10% 70%, rgba(153, 228, 242, 0.12) 0px, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 90% 60%, rgba(252, 179, 208, 0.1) 0px, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 90%, rgba(187, 146, 87, 0.15) 0px, transparent 50%),
+    radial-gradient(ellipse 100% 100% at 50% 50%, rgba(37, 146, 77, 0.05) 0px, transparent 70%),
+    linear-gradient(180deg, #0a0f0d 0%, #0d1210 50%, #0a0f0d 100%);
+  min-height: 100vh;
+}
+
+/* Neon Text Effect */
+.neon-text {
+  color: #99e4f2;
+  text-shadow: 
+    0 0 5px #99e4f2,
+    0 0 10px #99e4f2,
+    0 0 20px #95ccf9,
+    0 0 40px #95ccf9,
+    0 0 80px #25924d;
+  animation: neon-pulse 2s ease-in-out infinite alternate;
+}
+
+.neon-text-subtle {
+  color: #99e4f2;
+  text-shadow: 
+    0 0 4px rgba(153, 228, 242, 0.8),
+    0 0 8px rgba(149, 204, 249, 0.5),
+    0 0 16px rgba(37, 146, 77, 0.3);
+}
+
+@keyframes neon-pulse {
+  from {
+    text-shadow: 
+      0 0 5px #99e4f2,
+      0 0 10px #99e4f2,
+      0 0 20px #95ccf9,
+      0 0 40px #95ccf9,
+      0 0 80px #25924d;
+  }
+  to {
+    text-shadow: 
+      0 0 2px #99e4f2,
+      0 0 5px #99e4f2,
+      0 0 10px #95ccf9,
+      0 0 20px #95ccf9,
+      0 0 40px #25924d;
+  }
+}
+
+/* Glassmorphism Card - Dark */
+.glass-card {
+  background: rgba(17, 25, 22, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(31, 46, 40, 0.8);
+}
+
+/* Config A Card Background */
+.config-a-bg {
+  background: linear-gradient(135deg, rgba(149, 204, 249, 0.15) 0%, rgba(17, 25, 22, 0.9) 100%);
+  border: 1px solid rgba(149, 204, 249, 0.3);
+}
+
+/* Config B Card Background */
+.config-b-bg {
+  background: linear-gradient(135deg, rgba(37, 146, 77, 0.15) 0%, rgba(17, 25, 22, 0.9) 100%);
+  border: 1px solid rgba(37, 146, 77, 0.3);
+}
+
+/* Flip Card Styles */
+.flip-card {
+  perspective: 1000px;
+}
+
+.flip-card-inner {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flip-card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+  backface-visibility: hidden;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Glowing Orb Trail */
+.orb-trail {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(153, 228, 242, 0.8) 0%, rgba(149, 204, 249, 0.4) 40%, transparent 70%);
+  box-shadow: 
+    0 0 10px rgba(153, 228, 242, 0.6),
+    0 0 20px rgba(149, 204, 249, 0.4),
+    0 0 40px rgba(37, 146, 77, 0.3);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s ease;
+}
+
+.orb-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(153, 228, 242, 0.6) 0%, transparent 70%);
+  box-shadow: 0 0 6px rgba(153, 228, 242, 0.4);
+  transform: translate(-50%, -50%);
+  animation: orb-fade 0.8s ease-out forwards;
+}
+
+@keyframes orb-fade {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
   }
 }
