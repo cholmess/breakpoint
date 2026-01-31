@@ -435,28 +435,64 @@ export async function runProbe(
 }
 
 /**
+ * Progress callback type for probe execution
+ */
+export type ProgressCallback = (completed: number, total: number) => void;
+
+/**
  * Run all probes (all configs × all prompts)
  * Supports both simulation and real API modes
+ * Optional progress callback for real-time feedback
+ * 
+ * In real mode, probes run concurrently (rate limiter controls max 5 concurrent)
+ * In simulate mode, runs in batches for speed without overwhelming the system
  */
 export async function runAllProbes(
   configs: ProbeConfig[],
-  prompts: PromptRecord[]
+  prompts: PromptRecord[],
+  onProgress?: ProgressCallback
 ): Promise<ProbeResult[]> {
-  const results: ProbeResult[] = [];
-  
   const total = configs.length * prompts.length;
   let completed = 0;
   
+  // Build all probe tasks
+  const probeTasks: Array<{ config: ProbeConfig; prompt: PromptRecord }> = [];
   for (const config of configs) {
     for (const prompt of prompts) {
-      const result = await runProbe(config, prompt);
-      results.push(result);
-      
-      completed++;
-      if (currentMode === "real" && completed % 10 === 0) {
-        console.log(`   Progress: ${completed}/${total} probes completed`);
-      }
+      probeTasks.push({ config, prompt });
     }
+  }
+  
+  // For simulate mode: process in batches of 50 for speed
+  // For real mode: process all concurrently (rate limiter will control to max 5)
+  const batchSize = currentMode === "simulate" ? 50 : probeTasks.length;
+  const results: ProbeResult[] = [];
+  
+  for (let i = 0; i < probeTasks.length; i += batchSize) {
+    const batch = probeTasks.slice(i, i + batchSize);
+    
+    // Run batch concurrently
+    const batchResults = await Promise.all(
+      batch.map(async ({ config, prompt }) => {
+        const result = await runProbe(config, prompt);
+        
+        completed++;
+        
+        // Call progress callback if provided
+        if (onProgress) {
+          onProgress(completed, total);
+        }
+        
+        // Keep console.log for debugging (only in real mode, every 10 probes)
+        if (currentMode === "real" && completed % 10 === 0) {
+          console.log(`   Progress: ${completed}/${total} probes completed`);
+        }
+        
+        return result;
+      })
+    );
+    
+    results.push(...batchResults);
   }
   
   return results;

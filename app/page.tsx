@@ -58,6 +58,38 @@ export default function Dashboard() {
   const [simulatedConfigA, setSimulatedConfigA] = useState<Config | null>(null);
   const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
 
+  // Which API keys are set (for Real API mode warning)
+  const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean } | null>(null);
+
+  // When Real API is selected, check which keys are set
+  useEffect(() => {
+    if (runMode !== "real") {
+      setApiKeysCheck(null);
+      return;
+    }
+    fetch("/api/check-api-keys")
+      .then((r) => r.json())
+      .then(setApiKeysCheck)
+      .catch(() => setApiKeysCheck(null));
+  }, [runMode]);
+
+  // Infer provider from model name (matches server-side logic)
+  const providerForModel = (model: string): "openai" | "gemini" | "manus" | null => {
+    const m = (model || "").toLowerCase();
+    if (m.startsWith("gpt-") || m.startsWith("o1-")) return "openai";
+    if (m.startsWith("gemini-")) return "gemini";
+    if (m.startsWith("manus-")) return "manus";
+    return null;
+  };
+
+  const needsOpenai = providerForModel(configA.model) === "openai" || providerForModel(configB.model) === "openai";
+  const needsGemini = providerForModel(configA.model) === "gemini" || providerForModel(configB.model) === "gemini";
+  const needsManus = providerForModel(configA.model) === "manus" || providerForModel(configB.model) === "manus";
+  const missingKey =
+    runMode === "real" &&
+    apiKeysCheck &&
+    ((needsOpenai && !apiKeysCheck.openai) || (needsGemini && !apiKeysCheck.gemini) || (needsManus && !apiKeysCheck.manus));
+
   // Fetch data from API routes
   useEffect(() => {
     async function fetchData() {
@@ -94,18 +126,36 @@ export default function Dashboard() {
     setError(null);
     setProgress(0);
     
-    // Estimate progress based on typical probe count (200 prompts x 2 configs = 400 probes)
-    // Show estimated time: ~30 seconds for 400 probes
-    const estimatedProbes = 400;
+    // Calculate estimated time and increment rate based on mode
+    // Simulate mode: ~20 seconds for 400 probes (batched processing)
+    // Real mode: ~3-4 minutes with 5 concurrent requests (rate limiter controls max concurrency)
+    const estimatedTimeMs = runMode === "simulate" ? 20000 : 210000; // 20s vs 3.5min
+    const progressCap = 95; // Allow progress up to 95%, then wait for completion
+    const updateIntervalMs = 600; // Update every 600ms
+    const incrementsToReachCap = (estimatedTimeMs / updateIntervalMs) * (progressCap / 100);
+    const incrementPerUpdate = progressCap / incrementsToReachCap;
+    
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        // Simulate progress up to 90%, then wait for actual completion
-        if (prev < 90) {
-          return prev + 2; // Increment by 2% every ~600ms
+        // Increment progress up to cap, then wait for actual completion
+        if (prev < progressCap) {
+          const next = prev + incrementPerUpdate;
+          // Round to 1 decimal place to avoid floating-point precision issues
+          const rounded = Math.round(next * 10) / 10;
+          return rounded > progressCap ? progressCap : rounded;
         }
         return prev;
       });
-    }, 600);
+    }, updateIntervalMs);
+    
+    // Set timeout with buffer (2x estimated time: 40s for simulate, 7min for real)
+    const timeoutMs = estimatedTimeMs * 2;
+    const timeoutId = setTimeout(() => {
+      clearInterval(progressInterval);
+      setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
+      setStatus("idle");
+      setProgress(0);
+    }, timeoutMs);
     
     try {
       const response = await fetch("/api/run-simulation", {
@@ -120,6 +170,7 @@ export default function Dashboard() {
         }),
       });
       
+      clearTimeout(timeoutId);
       clearInterval(progressInterval);
       setProgress(100);
 
@@ -137,6 +188,7 @@ export default function Dashboard() {
       setSimulatedConfigB(data.configB || configB);
       setStatus("success");
     } catch (err) {
+      clearTimeout(timeoutId);
       clearInterval(progressInterval);
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
@@ -215,9 +267,14 @@ export default function Dashboard() {
                     Real API
                   </button>
                 </div>
+                {missingKey && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mb-3 leading-relaxed">
+                    Missing API key(s) for your selected configs. Copy <code className="text-xs bg-muted px-1 rounded">.env.example</code> to <code className="text-xs bg-muted px-1 rounded">.env</code> in the project root and add the keys. See SETUP.md.
+                  </p>
+                )}
                 <Button
                   onClick={runSimulation}
-                  disabled={status === "running"}
+                  disabled={status === "running" || Boolean(missingKey)}
                   className="w-full bg-[#25924d] hover:bg-[#25924d]/90 text-white"
                 >
                   <Play className="h-3.5 w-3.5 mr-1.5" />
@@ -241,7 +298,10 @@ export default function Dashboard() {
             ) : status === "running" ? (
               <div className="text-center py-8 space-y-4">
                 <div className="text-base text-muted-foreground mb-4 leading-relaxed">
-                  Running simulation... (est. 30s for ~400 probes)
+                  {progress >= 95 
+                    ? "Finalizing results..." 
+                    : `Running simulation... (est. ${runMode === "simulate" ? "~20s" : "~3-4min"} for ~400 probes)`
+                  }
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
                   <div 
@@ -249,7 +309,10 @@ export default function Dashboard() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <div className="text-sm text-muted-foreground leading-relaxed">{progress}%</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
+                  {progress.toFixed(1)}%
+                  {progress >= 95 && <span className="ml-2 text-xs">(processing...)</span>}
+                </div>
               </div>
             ) : error ? (
               <div className="text-center py-8 space-y-3">
