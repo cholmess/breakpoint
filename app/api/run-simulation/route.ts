@@ -2,12 +2,14 @@
  * API Route: Run Simulation
  * POST /api/run-simulation
  *
- * Runs the probe pipeline (simulate mode) with the provided configs,
+ * Runs the probe pipeline with the provided configs,
  * evaluates rules, and returns analysis, comparisons, distributions,
  * and timeline for the dashboard.
  *
- * Request body: { configA, configB, seed?: number, promptFamily?: string }
+ * Request body: { configA, configB, seed?: number, promptFamily?: string, mode?: "simulate" | "real" }
  * Response: { analysis, comparisons, distributions, timeline }
+ * 
+ * mode: "simulate" (default) - uses generated telemetry, "real" - calls actual LLM APIs
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -30,7 +32,7 @@ import type { ProbeConfig, PromptRecord } from "@/src/types";
 
 const PROMPTS_PATH = "data/prompts/prompt-suite.json";
 
-export const maxDuration = 60; // Allow up to 60s for 400 probes in simulate mode
+export const maxDuration = 60; // Allow up to 60s for probes (simulate mode is fast, real mode may need longer)
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,11 +42,13 @@ export async function POST(req: NextRequest) {
       configB,
       promptFamily,
       seed = 42,
+      mode = "simulate",
     }: {
       configA: ProbeConfig;
       configB: ProbeConfig;
       promptFamily?: string;
       seed?: number;
+      mode?: "simulate" | "real";
     } = body;
 
     if (!configA || !configB) {
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    setMode("simulate");
+    setMode(mode);
     setSeed(Number(seed) || 42);
     clearTelemetry();
 
