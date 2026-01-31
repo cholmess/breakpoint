@@ -19,6 +19,11 @@ import { RateLimiter } from "./gemini-client";
 export type ExecutionMode = "simulate" | "real";
 let currentMode: ExecutionMode = "simulate";
 
+/** Strip UTF-8 BOM if present so JSON.parse succeeds */
+function stripBOM(content: string): string {
+  return content.charCodeAt(0) === 0xfeff ? content.slice(1) : content;
+}
+
 // Rate limiter for API calls
 let rateLimiter: RateLimiter | null = null;
 
@@ -74,7 +79,7 @@ export function loadConfigs(dir: string): ProbeConfig[] {
   
   for (const file of files) {
     const filePath = path.join(configDir, file);
-    const content = fs.readFileSync(filePath, "utf-8");
+    const content = stripBOM(fs.readFileSync(filePath, "utf-8"));
     const config = JSON.parse(content) as ProbeConfig;
     configs.push(config);
   }
@@ -108,7 +113,7 @@ export function loadDomainPrompts(suiteFile: string): {
     throw new Error(`Suite file not found: ${targetPath}`);
   }
   
-  const content = fs.readFileSync(targetPath, "utf-8");
+  const content = stripBOM(fs.readFileSync(targetPath, "utf-8"));
   const data = JSON.parse(content);
   
   // Check if it's a domain prompt suite format
@@ -147,7 +152,7 @@ export function loadPrompts(dirOrFile: string): PromptRecord[] {
     
     for (const file of files) {
       const filePath = path.join(targetPath, file);
-      const content = fs.readFileSync(filePath, "utf-8");
+      const content = stripBOM(fs.readFileSync(filePath, "utf-8"));
       const data = JSON.parse(content);
       
       // Handle domain suite format
@@ -167,7 +172,7 @@ export function loadPrompts(dirOrFile: string): PromptRecord[] {
     return prompts;
   } else {
     // Load single file
-    const content = fs.readFileSync(targetPath, "utf-8");
+    const content = stripBOM(fs.readFileSync(targetPath, "utf-8"));
     const data = JSON.parse(content);
     
     // Handle domain suite format
