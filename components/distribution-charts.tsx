@@ -2,8 +2,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   XAxis,
@@ -12,139 +10,193 @@ import {
   ResponsiveContainer,
   Legend,
   CartesianGrid,
+  Cell,
 } from "recharts";
+import type { DistributionsData } from "@/types/dashboard";
 
 interface DistributionChartsProps {
-  latencyData: { name: string; configA: number; configB: number }[];
-  tokenData: { name: string; configA: number; configB: number }[];
+  byFailureMode: DistributionsData["by_failure_mode"];
+  byPromptFamily: DistributionsData["by_prompt_family"];
 }
 
+// Color mapping for failure modes
+const getFailureModeColor = (mode: string): string => {
+  const colors: Record<string, string> = {
+    context_overflow: "#ef4444", // red
+    silent_truncation_risk: "#f59e0b", // amber
+    latency_breach: "#f97316", // orange
+    cost_runaway: "#dc2626", // dark red
+    tool_timeout_risk: "#b91c1c", // darker red
+    retrieval_noise_risk: "#eab308", // yellow
+  };
+  return colors[mode] || "#6b7280"; // gray default
+};
+
+// Format failure mode name for display
+const formatFailureMode = (mode: string): string => {
+  return mode
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 export function DistributionCharts({
-  latencyData,
-  tokenData,
+  byFailureMode,
+  byPromptFamily,
 }: DistributionChartsProps) {
+  // Transform failure mode data for chart
+  const failureModeData = Object.values(byFailureMode)
+    .map((entry) => ({
+      name: formatFailureMode(entry.failure_mode),
+      count: entry.count,
+      proportion: (entry.proportion * 100).toFixed(1),
+      rawName: entry.failure_mode,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Transform prompt family data for chart
+  const promptFamilyData = Object.values(byPromptFamily)
+    .map((entry) => ({
+      name: entry.family.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+      count: entry.count,
+      proportion: (entry.proportion * 100).toFixed(1),
+    }))
+    .sort((a, b) => b.count - a.count);
+
   return (
     <div className="grid grid-cols-2 gap-4">
-      {/* Latency Distribution */}
-      <Card className="py-3">
+      {/* Failure Mode Distribution */}
+      <Card className="py-3 glass-card">
         <CardHeader className="py-2 px-4">
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Latency Distribution (ms)
+            Failure Mode Distribution
           </CardTitle>
         </CardHeader>
         <CardContent className="p-2">
           <div className="h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={latencyData}
-                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--border)"
-                  opacity={0.5}
-                />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 9 }}
-                  stroke="var(--muted-foreground)"
-                />
-                <YAxis
-                  tick={{ fontSize: 9 }}
-                  stroke="var(--muted-foreground)"
-                  width={30}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "6px",
-                    fontSize: "10px",
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: "10px" }}
-                  iconSize={8}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="configA"
-                  name="Config A"
-                  stroke="var(--accent)"
-                  fill="var(--accent)"
-                  fillOpacity={0.3}
-                  strokeWidth={1.5}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="configB"
-                  name="Config B"
-                  stroke="var(--emerald)"
-                  fill="var(--emerald)"
-                  fillOpacity={0.3}
-                  strokeWidth={1.5}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {failureModeData.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                No failure data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={failureModeData}
+                  margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    opacity={0.5}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 8 }}
+                    stroke="var(--muted-foreground)"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9 }}
+                    stroke="var(--muted-foreground)"
+                    width={30}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      fontSize: "10px",
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === "count") return [value, "Count"];
+                      if (name === "proportion") return [`${value}%`, "Proportion"];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "10px" }}
+                    iconSize={8}
+                  />
+                  <Bar dataKey="count" name="Count" radius={[2, 2, 0, 0]}>
+                    {failureModeData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={getFailureModeColor(entry.rawName)}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Token Distribution */}
-      <Card className="py-3">
+      {/* Prompt Family Distribution */}
+      <Card className="py-3 glass-card">
         <CardHeader className="py-2 px-4">
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Token Distribution
+            Prompt Family Distribution
           </CardTitle>
         </CardHeader>
         <CardContent className="p-2">
           <div className="h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={tokenData}
-                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--border)"
-                  opacity={0.5}
-                />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 9 }}
-                  stroke="var(--muted-foreground)"
-                />
-                <YAxis
-                  tick={{ fontSize: 9 }}
-                  stroke="var(--muted-foreground)"
-                  width={30}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "6px",
-                    fontSize: "10px",
-                  }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: "10px" }}
-                  iconSize={8}
-                />
-                <Bar
-                  dataKey="configA"
-                  name="Config A"
-                  fill="var(--accent)"
-                  radius={[2, 2, 0, 0]}
-                />
-                <Bar
-                  dataKey="configB"
-                  name="Config B"
-                  fill="var(--emerald)"
-                  radius={[2, 2, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {promptFamilyData.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                No prompt family data available
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={promptFamilyData}
+                  margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    opacity={0.5}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 8 }}
+                    stroke="var(--muted-foreground)"
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 9 }}
+                    stroke="var(--muted-foreground)"
+                    width={30}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "6px",
+                      fontSize: "10px",
+                    }}
+                    formatter={(value: number, name: string) => {
+                      if (name === "count") return [value, "Count"];
+                      if (name === "proportion") return [`${value}%`, "Proportion"];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: "10px" }}
+                    iconSize={8}
+                  />
+                  <Bar
+                    dataKey="count"
+                    name="Count"
+                    fill="#95ccf9"
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </CardContent>
       </Card>

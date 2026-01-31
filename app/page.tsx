@@ -1,112 +1,121 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FlipCard } from "@/components/flip-card";
 import { TrafficLight } from "@/components/traffic-light";
 import { ProbabilityCard } from "@/components/probability-card";
 import { DistributionCharts } from "@/components/distribution-charts";
 import { FailureBreakdown } from "@/components/failure-breakdown";
 import { PromptSelector } from "@/components/prompt-selector";
+import { ConfidenceBand } from "@/components/confidence-band";
+import { OrbTrail } from "@/components/orb-trail";
 import { Activity, Zap } from "lucide-react";
+import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
-const defaultConfigA = {
+// Default configs matching the schema
+const defaultConfigA: Config = {
+  id: "config-a",
+  model: "gpt-4",
+  context_window: 8192,
+  top_k: 10,
+  chunk_size: 512,
+  max_output_tokens: 2048,
+  tools_enabled: true,
   temperature: 0.7,
-  topK: 40,
-  contextWindow: 4096,
-  chunkSize: 512,
-  maxOutputTokens: 2048,
-  toolsEnabled: true,
-  budgetCost: 2.5,
+  cost_per_1k_tokens: 0.03,
 };
 
-const defaultConfigB = {
-  temperature: 0.3,
-  topK: 20,
-  contextWindow: 8192,
-  chunkSize: 256,
-  maxOutputTokens: 4096,
-  toolsEnabled: false,
-  budgetCost: 1.8,
+const defaultConfigB: Config = {
+  id: "config-b",
+  model: "gpt-4",
+  context_window: 16384,
+  top_k: 4,
+  chunk_size: 1024,
+  max_output_tokens: 4096,
+  tools_enabled: false,
+  temperature: 0.5,
+  cost_per_1k_tokens: 0.03,
 };
-
-const mockLatencyData = [
-  { name: "p10", configA: 120, configB: 95 },
-  { name: "p25", configA: 180, configB: 140 },
-  { name: "p50", configA: 250, configB: 195 },
-  { name: "p75", configA: 380, configB: 290 },
-  { name: "p90", configA: 520, configB: 420 },
-  { name: "p99", configA: 850, configB: 680 },
-];
-
-const mockTokenData = [
-  { name: "0-500", configA: 150, configB: 180 },
-  { name: "500-1k", configA: 280, configB: 320 },
-  { name: "1k-2k", configA: 220, configB: 250 },
-  { name: "2k-3k", configA: 120, configB: 140 },
-  { name: "3k-4k", configA: 60, configB: 80 },
-  { name: "4k+", configA: 20, configB: 30 },
-];
-
-const mockFailures = [
-  {
-    mode: "Context Overflow",
-    severity: "high" as const,
-    description:
-      "Config A exceeds context limit at 15% of test cases, causing truncation artifacts",
-  },
-  {
-    mode: "Hallucination Rate",
-    severity: "medium" as const,
-    description:
-      "Higher temperature in A correlates with 23% increased hallucination frequency",
-  },
-  {
-    mode: "Tool Call Errors",
-    severity: "low" as const,
-    description:
-      "Config B shows 8% fewer tool invocation failures due to disabled tools",
-  },
-];
 
 export default function Dashboard() {
-  const [configA, setConfigA] = useState(defaultConfigA);
-  const [configB, setConfigB] = useState(defaultConfigB);
+  const [configA, setConfigA] = useState<Config>(defaultConfigA);
+  const [configB, setConfigB] = useState<Config>(defaultConfigB);
   const [selectedPrompt, setSelectedPrompt] = useState("long-context");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
-  const [probability, setProbability] = useState(67.3);
-  const [reasoning, setReasoning] = useState(
-    "Based on Monte Carlo simulation with 10,000 iterations, Config B demonstrates superior stability. Lower temperature reduces output variance by 34%. Reduced context window minimizes memory pressure while chunk size optimization improves throughput by 18%. Budget efficiency increased by 28% with comparable quality metrics. Risk of catastrophic failure reduced from 4.2% to 1.1%."
-  );
+  
+  // Data from API
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const [comparisonsData, setComparisonsData] = useState<ComparisonsData | null>(null);
+  const [distributionsData, setDistributionsData] = useState<DistributionsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch data from API routes
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [analysis, comparisons, distributions] = await Promise.all([
+          fetch('/api/analysis').then(r => r.json()),
+          fetch('/api/comparisons').then(r => r.json()),
+          fetch('/api/distributions').then(r => r.json()),
+        ]);
+        
+        setAnalysisData(analysis);
+        setComparisonsData(comparisons);
+        setDistributionsData(distributions);
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        setError('Failed to load analysis data');
+        // Set empty defaults
+        setAnalysisData({ configs: {} });
+        setComparisonsData({ comparisons: [] });
+        setDistributionsData({ by_failure_mode: {}, by_prompt_family: {} });
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchData();
+  }, []);
 
   const runSimulation = useCallback(() => {
     setStatus("running");
-
-    // Simulate processing
-    setTimeout(() => {
-      const newProbability = 50 + Math.random() * 45;
-      setProbability(newProbability);
-      setStatus(newProbability >= 50 ? "success" : "failure");
-
-      const newReasoning =
-        newProbability >= 50
-          ? `Config B shows ${(newProbability - 50).toFixed(1)}% safety improvement. Temperature differential of ${(configA.temperature - configB.temperature).toFixed(1)} reduces variance. Context window ratio ${(configB.contextWindow / configA.contextWindow).toFixed(1)}x provides ${configB.contextWindow > configA.contextWindow ? "extended" : "focused"} processing capacity. Projected cost savings: $${((configA.budgetCost - configB.budgetCost) * 10).toFixed(2)}/10M tokens.`
-          : `Warning: Config B shows ${(50 - newProbability).toFixed(1)}% higher failure risk. Temperature setting may be too conservative for ${selectedPrompt} workload. Consider adjusting Top-K from ${configB.topK} to ${Math.min(configB.topK + 15, 100)} for improved coverage.`;
-
-      setReasoning(newReasoning);
+    // Note: In a real implementation, this would trigger the probe runner
+    // For now, we'll just refresh the data after a delay
+    setTimeout(async () => {
+      try {
+        const [analysis, comparisons, distributions] = await Promise.all([
+          fetch('/api/analysis').then(r => r.json()),
+          fetch('/api/comparisons').then(r => r.json()),
+          fetch('/api/distributions').then(r => r.json()),
+        ]);
+        
+        setAnalysisData(analysis);
+        setComparisonsData(comparisons);
+        setDistributionsData(distributions);
+        setStatus("success");
+      } catch (err) {
+        console.error('Failed to refresh data:', err);
+        setStatus("failure");
+      }
     }, 2000);
-  }, [configA, configB, selectedPrompt]);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen gradient-mesh">
+      <OrbTrail />
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border/30 glass-card">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-md bg-primary">
-              <Activity className="h-4 w-4 text-primary-foreground" />
+            <div className="p-1.5 rounded-md bg-black border border-zinc-800">
+              <Activity className="h-4 w-4 text-[#99e4f2]" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold tracking-tight">
+              <h1 className="text-sm font-bold tracking-tight neon-text-subtle">
                 Probabilistic Failure Simulator
               </h1>
               <p className="text-[10px] text-muted-foreground">
@@ -115,9 +124,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary text-xs">
-              <Zap className="h-3 w-3 text-emerald" />
-              <span className="font-medium">A/B Testing Mode</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/50 border border-[#25924d]/30 text-xs">
+              <Zap className="h-3 w-3 text-[#25924d]" />
+              <span className="font-medium text-[#25924d]">A/B Testing Mode</span>
             </div>
           </div>
         </div>
@@ -149,15 +158,34 @@ export default function Dashboard() {
 
           {/* Right Column - Results */}
           <div className="col-span-7 space-y-4">
-            <ProbabilityCard
-              probability={probability}
-              isRunning={status === "running"}
-            />
-            <DistributionCharts
-              latencyData={mockLatencyData}
-              tokenData={mockTokenData}
-            />
-            <FailureBreakdown failures={mockFailures} reasoning={reasoning} />
+            {loading ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Loading analysis data...
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-sm text-destructive">
+                {error}
+              </div>
+            ) : (
+              <>
+                <ProbabilityCard
+                  comparisons={comparisonsData?.comparisons || []}
+                  selectedConfigA={configA.id}
+                  selectedConfigB={configB.id}
+                  isRunning={status === "running"}
+                />
+                {analysisData && (
+                  <ConfidenceBand analysisData={analysisData} />
+                )}
+                <DistributionCharts
+                  byFailureMode={distributionsData?.by_failure_mode || {}}
+                  byPromptFamily={distributionsData?.by_prompt_family || {}}
+                />
+                <FailureBreakdown 
+                  byFailureMode={distributionsData?.by_failure_mode || {}}
+                />
+              </>
+            )}
           </div>
         </div>
       </main>
