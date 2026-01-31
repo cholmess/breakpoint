@@ -8,6 +8,7 @@ export interface ConfigStats {
   phat: number;
   ci_bootstrap?: [number, number];
   ci_bayesian?: [number, number];
+  ci_wilson?: [number, number]; // Wilson score 95% CI (deterministic, width varies with k,n)
 }
 
 export interface AnalysisData {
