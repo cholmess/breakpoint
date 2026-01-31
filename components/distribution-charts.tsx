@@ -44,8 +44,8 @@ const formatFailureMode = (mode: string): string => {
 
 // Custom tick component for wrapping text
 const CustomTick = ({ x, y, payload }: any) => {
-  const text = payload.value;
-  const words = text.split(' ');
+  const text = payload.value || '';
+  const words = text.split(/(?=[A-Z])|[\s_]/).filter((w: string) => w.length > 0);
   const maxCharsPerLine = 10;
   
   // Split text into lines if needed
@@ -53,26 +53,38 @@ const CustomTick = ({ x, y, payload }: any) => {
   let currentLine = '';
   
   words.forEach((word: string) => {
-    if ((currentLine + word).length <= maxCharsPerLine) {
-      currentLine += (currentLine ? ' ' : '') + word;
+    const trimmedWord = word.trim();
+    if (!trimmedWord) return;
+    
+    if ((currentLine + trimmedWord).length <= maxCharsPerLine) {
+      currentLine += (currentLine ? ' ' : '') + trimmedWord;
     } else {
       if (currentLine) lines.push(currentLine);
-      currentLine = word;
+      // If word is too long, truncate it
+      if (trimmedWord.length > maxCharsPerLine) {
+        currentLine = trimmedWord.substring(0, maxCharsPerLine - 2) + '..';
+      } else {
+        currentLine = trimmedWord;
+      }
     }
   });
   if (currentLine) lines.push(currentLine);
   
+  // Limit to 2 lines max
+  const displayLines = lines.slice(0, 2);
+  
   return (
     <g transform={`translate(${x},${y})`}>
-      {lines.map((line, i) => (
+      {displayLines.map((line, i) => (
         <text
           key={i}
           x={0}
           y={0}
-          dy={i * 12 + 3}
+          dy={i * 15 + 12}
           textAnchor="middle"
           fill="var(--muted-foreground)"
           fontSize={11}
+          style={{ dominantBaseline: 'hanging' }}
         >
           {line}
         </text>
@@ -123,8 +135,8 @@ export function DistributionCharts({
             Which types of problems occurred most often during testing.
           </p>
         </CardHeader>
-        <CardContent className="p-2">
-          <div className="h-[180px] [&_.recharts-wrapper]:!bg-transparent [&_.recharts-surface]:!bg-transparent [&_.recharts-bar-rectangle:hover]:!bg-transparent [&_.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-active-shape]:!fill-transparent">
+        <CardContent className="p-2 pb-0">
+          <div className="h-[400px] [&_.recharts-wrapper]:!bg-transparent [&_.recharts-surface]:!bg-transparent [&_.recharts-bar-rectangle:hover]:!bg-transparent [&_.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-active-shape]:!fill-transparent">
             {failureModeData.length === 0 ? (
               <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
                 No failure data available
@@ -133,7 +145,8 @@ export function DistributionCharts({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={failureModeData}
-                  margin={{ top: 5, right: 10, left: 0, bottom: 40 }}
+                  margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
+                  barCategoryGap="10%"
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -143,8 +156,10 @@ export function DistributionCharts({
                   <XAxis
                     dataKey="name"
                     tick={CustomTick}
-                    height={70}
+                    height={100}
                     interval={0}
+                    tickLine={false}
+                    angle={0}
                   />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -176,8 +191,10 @@ export function DistributionCharts({
                     cursor={{ fill: 'transparent' }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: "12px" }}
-                    iconSize={10}
+                    wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                    iconSize={8}
+                    verticalAlign="top"
+                    height={20}
                   />
                   <Bar 
                     dataKey="count" 
@@ -227,8 +244,8 @@ export function DistributionCharts({
             Which types of prompts triggered the most failures.
           </p>
         </CardHeader>
-        <CardContent className="p-2">
-          <div className="h-[180px] [&_.recharts-wrapper]:!bg-transparent [&_.recharts-surface]:!bg-transparent [&_.recharts-bar-rectangle:hover]:!bg-transparent [&_.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-active-shape]:!fill-transparent">
+        <CardContent className="p-2 pb-0">
+          <div className="h-[400px] [&_.recharts-wrapper]:!bg-transparent [&_.recharts-surface]:!bg-transparent [&_.recharts-bar-rectangle:hover]:!bg-transparent [&_.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-active-shape]:!fill-transparent">
             {promptFamilyData.length === 0 ? (
               <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
                 No prompt family data available
@@ -237,7 +254,8 @@ export function DistributionCharts({
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={promptFamilyData}
-                  margin={{ top: 5, right: 10, left: 0, bottom: 40 }}
+                  margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
+                  barCategoryGap="10%"
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -247,8 +265,10 @@ export function DistributionCharts({
                   <XAxis
                     dataKey="name"
                     tick={CustomTick}
-                    height={70}
+                    height={100}
                     interval={0}
+                    tickLine={false}
+                    angle={0}
                   />
                   <YAxis
                     tick={{ fontSize: 12 }}
@@ -280,8 +300,10 @@ export function DistributionCharts({
                     cursor={{ fill: 'transparent' }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: "12px" }}
-                    iconSize={10}
+                    wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                    iconSize={8}
+                    verticalAlign="top"
+                    height={20}
                   />
                   <Bar
                     dataKey="count"

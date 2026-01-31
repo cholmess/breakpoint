@@ -7,11 +7,16 @@ import { ProbabilityCard } from "@/components/probability-card";
 import { DistributionCharts } from "@/components/distribution-charts";
 import { FailureBreakdown } from "@/components/failure-breakdown";
 import { ConfidenceBand } from "@/components/confidence-band";
-import { OrbTrail } from "@/components/orb-trail";
+import dynamic from "next/dynamic";
+
+const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ default: mod.OrbTrail })), {
+  ssr: false,
+});
 import { ResultsSummary } from "@/components/results-summary";
-import { Activity, Zap, Play } from "lucide-react";
+import { Activity, Zap, Play, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
@@ -91,35 +96,39 @@ export default function Dashboard() {
     apiKeysCheck &&
     ((needsOpenai && !apiKeysCheck.openai) || (needsGemini && !apiKeysCheck.gemini) || (needsManus && !apiKeysCheck.manus));
 
-  // Fetch data from API routes
+  // Fetch data from API routes (non-blocking - show page immediately)
   useEffect(() => {
+    // Set initial empty state immediately so page renders
+    setAnalysisData({ configs: {} });
+    setComparisonsData({ comparisons: [] });
+    setDistributionsData({ by_failure_mode: {}, by_prompt_family: {} });
+    setLoading(false);
+    
+    // Fetch data in background with timeout
     async function fetchData() {
       try {
-        setLoading(true);
-        setError(null);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
         
         const [analysis, comparisons, distributions] = await Promise.all([
-          fetch('/api/analysis').then(r => r.json()),
-          fetch('/api/comparisons').then(r => r.json()),
-          fetch('/api/distributions').then(r => r.json()),
+          fetch('/api/analysis', { signal: controller.signal }).then(r => r.json()),
+          fetch('/api/comparisons', { signal: controller.signal }).then(r => r.json()),
+          fetch('/api/distributions', { signal: controller.signal }).then(r => r.json()),
         ]);
         
+        clearTimeout(timeoutId);
         setAnalysisData(analysis);
         setComparisonsData(comparisons);
         setDistributionsData(distributions);
       } catch (err) {
         console.error('Failed to fetch data:', err);
-        setError('Failed to load analysis data');
-        // Set empty defaults
-        setAnalysisData({ configs: {} });
-        setComparisonsData({ comparisons: [] });
-        setDistributionsData({ by_failure_mode: {}, by_prompt_family: {} });
-      } finally {
-        setLoading(false);
+        // Keep empty defaults, don't show error on initial load
       }
     }
     
-    fetchData();
+    // Fetch in background after a short delay
+    const timer = setTimeout(fetchData, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const runSimulation = useCallback(async () => {
@@ -225,10 +234,16 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/50 border border-[#25924d]/30 text-sm">
-              <Zap className="h-4 w-4 text-[#25924d]" />
-              <span className="font-medium text-[#25924d]">A/B Testing Mode</span>
-            </div>
+            <Link href="/help">
+              <Button
+                variant="ghost"
+                size="default"
+                className="text-base font-bold text-muted-foreground hover:text-foreground"
+              >
+                <HelpCircle className="h-5 w-5 mr-2" />
+                Help
+              </Button>
+            </Link>
           </div>
         </div>
       </header>

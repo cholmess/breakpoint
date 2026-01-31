@@ -105,8 +105,9 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
               />
               <XAxis
                 dataKey="config"
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 14, dy: 8 }}
                 stroke="var(--muted-foreground)"
+                tickLine={false}
               />
               <YAxis
                 tick={{ fontSize: 12 }}
