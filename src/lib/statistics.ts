@@ -30,6 +30,7 @@ export function setStatsSeed(s: number): void {
 /**
  * Bootstrap 95% CI for binomial p = k/n.
  * Resample n trials with replacement, count "failures" proportion, repeat.
+ * Edge cases: n<=0 → [0,0]; k clamped to [0,n] so proportion is valid.
  */
 export function bootstrapCI(
   k: number,
@@ -37,13 +38,15 @@ export function bootstrapCI(
   alpha = 0.05
 ): [number, number] {
   if (n <= 0) return [0, 0];
+  const kClamped = Math.max(0, Math.min(k, n));
+  const p = kClamped / n;
   const lowerIdx = Math.floor((alpha / 2) * BOOTSTRAP_ITERATIONS);
   const upperIdx = Math.floor((1 - alpha / 2) * BOOTSTRAP_ITERATIONS);
   const phats: number[] = [];
   for (let i = 0; i < BOOTSTRAP_ITERATIONS; i++) {
     let failures = 0;
     for (let j = 0; j < n; j++) {
-      if (randomFn() < k / n) failures++;
+      if (randomFn() < p) failures++;
     }
     phats.push(failures / n);
   }
@@ -76,6 +79,7 @@ function sampleBeta(alpha: number, beta: number): number {
 
 /**
  * Bayesian 95% credible interval using Beta(1+k, 1+n-k) posterior (Beta(1,1) prior).
+ * Edge cases: n<=0 → [0,0]; k clamped to [0,n] so Beta(1+n-k) has beta>=1.
  */
 export function bayesianBetaCI(
   k: number,
@@ -83,8 +87,9 @@ export function bayesianBetaCI(
   alpha = 0.05
 ): [number, number] {
   if (n <= 0) return [0, 0];
-  const a = 1 + k;
-  const b = 1 + n - k;
+  const kClamped = Math.max(0, Math.min(k, n));
+  const a = 1 + kClamped;
+  const b = 1 + n - kClamped;
   const samples: number[] = [];
   for (let i = 0; i < BAYESIAN_SAMPLES; i++) {
     samples.push(sampleBeta(a, b));
@@ -98,12 +103,16 @@ export function bayesianBetaCI(
 /**
  * P(A safer than B) = P(p_A < p_B) using posterior samples.
  * A is safer when its failure rate is lower.
+ * Edge case: if either config has n<=0 (no data), return 0.5 (indeterminate).
  */
 export function compareConfigs(a: Stats, b: Stats): { pASafer: number } {
-  const aAlpha = 1 + a.k;
-  const aBeta = 1 + a.n - a.k;
-  const bAlpha = 1 + b.k;
-  const bBeta = 1 + b.n - b.k;
+  if (a.n <= 0 || b.n <= 0) return { pASafer: 0.5 };
+  const aK = Math.max(0, Math.min(a.k, a.n));
+  const bK = Math.max(0, Math.min(b.k, b.n));
+  const aAlpha = 1 + aK;
+  const aBeta = 1 + a.n - aK;
+  const bAlpha = 1 + bK;
+  const bBeta = 1 + b.n - bK;
   let countASafer = 0;
   for (let i = 0; i < COMPARE_SAMPLES; i++) {
     const pA = sampleBeta(aAlpha, aBeta);
