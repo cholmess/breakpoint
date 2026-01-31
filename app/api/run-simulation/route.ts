@@ -98,7 +98,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    prompts = filterPromptsByFamily(prompts, promptFamily || "all");
+    const filtered = filterPromptsByFamily(prompts, promptFamily || "all");
+    // If filter matched no family (e.g. UI sent "long-context" but suite has "short_plain"), use all prompts
+    prompts = filtered.length > 0 ? filtered : prompts;
     if (prompts.length === 0) {
       return NextResponse.json(
         { error: "No prompts to run (check prompt suite path)" },
@@ -115,7 +117,8 @@ export async function POST(req: NextRequest) {
     const events = evaluateAllRules(results, rules);
     const timeline = buildBreakFirstTimeline(events);
 
-    const analysis = runAnalysis(events, prompts);
+    const configIds = configs.map(c => c.id);
+    const analysis = runAnalysis(events, prompts, configIds);
     const statsList = Object.values(analysis.configs);
     const comparisons = runComparisons(statsList);
     const distributions = runDistributions(events, prompts);

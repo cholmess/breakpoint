@@ -64,9 +64,20 @@ export function PromptSelector({
           <div className="text-xs text-muted-foreground mb-4">Loading prompt families...</div>
         ) : (
           <div className="flex flex-wrap gap-2 mb-4">
-            {promptFamilies.length === 0 ? (
-              <div className="text-xs text-muted-foreground">No prompt families available</div>
-            ) : (
+            <button
+              type="button"
+              onClick={() => onSelect("all")}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors border",
+                selected === "all"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-card hover:bg-secondary border-border text-foreground"
+              )}
+            >
+              <FileText className="h-3 w-3" />
+              All
+            </button>
+            {promptFamilies.length === 0 ? null : (
               promptFamilies.map((family) => (
                 <button
                   key={family}
