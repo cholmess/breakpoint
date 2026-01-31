@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,31 @@ interface ConfigFormProps {
   label: string;
 }
 
+interface ModelOption {
+  value: string;
+  label: string;
+}
+
 export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
+  const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
+
+  useEffect(() => {
+    fetch("/api/available-models")
+      .then((res) => res.json())
+      .then((data: { models: ModelOption[] }) => {
+        const models = data.models ?? [];
+        setModelOptions(models);
+        const values = models.map((m) => m.value);
+        if (models.length > 0 && config.model && !values.includes(config.model)) {
+          onChange({ ...config, model: models[0].value });
+        }
+      })
+      .catch(() => setModelOptions([]));
+  }, []);
+
+  // #region agent log
+  if (typeof fetch !== 'undefined') { fetch('http://127.0.0.1:7242/ingest/dd7b3873-0619-4a4c-9588-ce7e985afaba',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'config-form.tsx',message:'ConfigForm render',data:{modelOptionsLength:modelOptions.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{}); }
+  // #endregion
   return (
     <div className="space-y-4">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
@@ -31,13 +56,23 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="gpt-4">GPT-4</SelectItem>
-              <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-              <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
-              <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
-              <SelectItem value="manus-1.6">Manus 1.6</SelectItem>
-              <SelectItem value="manus-1.6-lite">Manus 1.6 Lite</SelectItem>
-              <SelectItem value="manus-1.6-max">Manus 1.6 Max</SelectItem>
+              {modelOptions.length > 0 ? (
+                modelOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))
+              ) : (
+                <>
+                  <SelectItem value="gpt-4">GPT-4</SelectItem>
+                  <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                  <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                  <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                  <SelectItem value="manus-1.6">Manus 1.6</SelectItem>
+                  <SelectItem value="manus-1.6-lite">Manus 1.6 Lite</SelectItem>
+                  <SelectItem value="manus-1.6-max">Manus 1.6 Max</SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

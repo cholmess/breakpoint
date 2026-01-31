@@ -6,6 +6,7 @@
   "scripts": {
     "test": "npx tsx tests/statistics.test.ts",
     "test:statistics": "npx tsx tests/statistics.test.ts",
+    "test:edge-cases": "npx tsx tests/edge-cases.test.ts",
     "probes": "tsx src/cli/run-probes.ts",
     "analyze": "tsx src/cli/run-analysis.ts",
     "dev": "next dev",

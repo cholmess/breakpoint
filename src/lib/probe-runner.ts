@@ -195,6 +195,20 @@ export function loadPrompts(dirOrFile: string): PromptRecord[] {
 }
 
 /**
+ * Filter prompts by family
+ * Returns all prompts if family is "all", otherwise filters by matching family
+ */
+export function filterPromptsByFamily(
+  prompts: PromptRecord[],
+  family: string
+): PromptRecord[] {
+  if (family === "all" || !family) {
+    return prompts;
+  }
+  return prompts.filter((p) => p.family === family);
+}
+
+/**
  * Estimate token count from text (rough approximation: 1 token ≈ 4 characters)
  */
 function estimateTokens(text: string): number {

@@ -28,14 +28,17 @@ function loadFixture(): FailureEvent[] {
   return JSON.parse(content) as FailureEvent[];
 }
 
+// Mock prompts use the same 8 families as data/prompts/prompt-suite.json:
+// short_plain, short_tool_heavy, short_doc_grounded, short_tool_and_doc,
+// long_plain, long_tool_heavy, long_doc_grounded, long_tool_and_doc
 function mockPrompts(): PromptRecord[] {
   return [
     { id: "p_001", family: "short_plain", use_case: "general_qa", prompt: "?", expects_tools: false, expects_citations: false },
-    { id: "p_002", family: "long_context", use_case: "legal_qa", prompt: "?", expects_tools: false, expects_citations: false },
-    { id: "p_003", family: "tool_heavy", use_case: "code_help", prompt: "?", expects_tools: true, expects_citations: false },
-    { id: "p_004", family: "doc_grounded", use_case: "doc_qa", prompt: "?", expects_tools: false, expects_citations: true },
+    { id: "p_002", family: "long_plain", use_case: "legal_qa", prompt: "?", expects_tools: false, expects_citations: false },
+    { id: "p_003", family: "short_tool_heavy", use_case: "code_help", prompt: "?", expects_tools: true, expects_citations: false },
+    { id: "p_004", family: "short_doc_grounded", use_case: "doc_qa", prompt: "?", expects_tools: false, expects_citations: true },
     { id: "p_005", family: "short_plain", use_case: "summarization", prompt: "?", expects_tools: false, expects_citations: false },
-    { id: "p_006", family: "long_context", use_case: "research", prompt: "?", expects_tools: false, expects_citations: false },
+    { id: "p_006", family: "long_plain", use_case: "research", prompt: "?", expects_tools: false, expects_citations: false },
   ];
 }
 

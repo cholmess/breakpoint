@@ -103,9 +103,9 @@ export default function Dashboard() {
     }, 600);
     
     try {
-      const response = await fetch('/api/run-simulation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/run-simulation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           configA,
           configB,
@@ -116,21 +116,21 @@ export default function Dashboard() {
       
       clearInterval(progressInterval);
       setProgress(100);
-      
+
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Simulation failed' }));
-        throw new Error(errorData.message || 'Simulation failed');
+        throw new Error(data.message || data.error || "Simulation failed");
       }
-      
-      const { analysis, comparisons, distributions } = await response.json();
-      setAnalysisData(analysis);
-      setComparisonsData(comparisons);
-      setDistributionsData(distributions);
+
+      setAnalysisData(data.analysis);
+      setComparisonsData(data.comparisons);
+      setDistributionsData(data.distributions);
       setStatus("success");
     } catch (err) {
       clearInterval(progressInterval);
-      console.error('Simulation failed:', err);
-      setError(err instanceof Error ? err.message : 'Simulation failed');
+      console.error("Simulation failed:", err);
+      setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
     }
   }, [configA, configB, selectedPrompt]);
