@@ -4,22 +4,22 @@ overview: A comprehensive review of the breakpoint project identifying incompati
 todos:
   - id: a1-add-openai-dep
     content: "[Person A] Add openai package to dependencies in package.json"
-    status: pending
+    status: completed
   - id: a2-fix-type-safety
     content: "[Person A] Change getEnhancedRules signature from Map<string, any> to Map<string, ProbeConfig>"
-    status: pending
+    status: completed
   - id: a3-fix-gemini-tools
     content: "[Person A] Implement tool call tracking in gemini-client.ts (currently hardcoded to 0)"
-    status: pending
+    status: completed
   - id: a4-fix-provider-fallback
     content: "[Person A] Handle unknown model names in llm-client.ts (throw error instead of defaulting to gemini)"
-    status: pending
+    status: completed
   - id: a5-deprecate-default-rules
     content: "[Person A] Add @deprecated JSDoc to getDefaultRules() or remove if unused"
-    status: pending
+    status: completed
   - id: a6-add-tests-person-a
     content: "[Person A] Add unit tests for rules-engine.ts, probe-runner.ts, timeline.ts, telemetry-logger.ts"
-    status: pending
+    status: completed
   - id: b1-fix-test-fixtures
     content: "[Person B] Align test fixture config IDs or document that they are isolated mocks"
     status: pending
@@ -31,13 +31,13 @@ todos:
     status: pending
   - id: s1-fix-module-system
     content: "[Shared/A] Resolve module system mismatch between package.json (commonjs) and tsconfig (ESNext)"
-    status: pending
+    status: completed
   - id: s2-configure-npm-test
     content: "[Shared/B] Update package.json test script to run actual tests"
     status: pending
   - id: s3-run-e2e-verification
     content: "[All] Run full pipeline (probes -> analyze) and verify all outputs are generated correctly"
-    status: pending
+    status: completed
 isProject: false
 ---
 
