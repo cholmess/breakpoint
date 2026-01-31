@@ -36,7 +36,7 @@ const getFailureModeDescription = (
   const descriptions: Record<FailureMode, string> = {
     context_overflow: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Input tokens exceed context window limit, causing truncation.`,
     silent_truncation_risk: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Context usage exceeds 85% threshold, risking silent truncation.`,
-    latency_breach: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Response latency exceeds 3000ms threshold.`,
+    latency_breach: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Response latency exceeds 15000ms (15s) threshold.`,
     cost_runaway: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Estimated cost exceeds configured budget threshold.`,
     tool_timeout_risk: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Tool calls present with timeout events detected.`,
     retrieval_noise_risk: `Detected in ${count} event(s) (${(proportion * 100).toFixed(1)}% of failures). Top-K retrieval value exceeds 8, increasing noise risk.`,

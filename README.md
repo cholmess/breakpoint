@@ -59,7 +59,7 @@ The pipeline will:
 
 1. **Context Overflow** (HIGH): tokens_in > context_window
 2. **Silent Truncation Risk** (MED): context_usage > 0.85
-3. **Latency Breach** (MED/HIGH): latency_ms > 3000ms
+3. **Latency Breach** (MED/HIGH): latency_ms > 15000ms (15 seconds)
 4. **Cost Runaway** (HIGH): estimated_cost exceeds threshold
 5. **Tool Timeout Risk** (HIGH): tool_calls > 0 && timeouts > 0
 6. **Retrieval Noise Risk** (MED): top_k > 8
