@@ -27,6 +27,33 @@ export function setStatsSeed(s: number): void {
   randomFn = seededRandom;
 }
 
+/** z for 95% two-sided CI (approx 1.96) */
+const Z_95 = 1.959963984540054;
+
+/**
+ * Wilson score 95% CI for binomial p = k/n.
+ * Deterministic; width clearly varies with k and n (narrow when n large or p near 0/1).
+ * Edge cases: n<=0 → [0,0]; k clamped to [0,n].
+ */
+export function wilsonScoreCI(
+  k: number,
+  n: number,
+  _alpha = 0.05
+): [number, number] {
+  if (n <= 0) return [0, 0];
+  const kClamped = Math.max(0, Math.min(k, n));
+  const p = kClamped / n;
+  const z = Z_95;
+  const z2 = z * z;
+  const denom = 1 + z2 / n;
+  const center = (p + z2 / (2 * n)) / denom;
+  const margin =
+    (z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n))) / denom;
+  const lower = Math.max(0, center - margin);
+  const upper = Math.min(1, center + margin);
+  return [lower, upper];
+}
+
 /**
  * Bootstrap 95% CI for binomial p = k/n.
  * Resample n trials with replacement, count "failures" proportion, repeat.

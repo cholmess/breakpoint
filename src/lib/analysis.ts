@@ -14,7 +14,7 @@ import type {
   PromptRecord,
 } from "../types";
 import { estimatePhat } from "./probability";
-import { bootstrapCI, bayesianBetaCI, compareConfigs } from "./statistics";
+import { bootstrapCI, bayesianBetaCI, wilsonScoreCI, compareConfigs } from "./statistics";
 
 /**
  * Build prompt_id -> family map from prompts.
@@ -110,6 +110,7 @@ export function runAnalysis(
     const stats = estimatePhat(events || [], configId, totalTrials);
     stats.ci_bootstrap = bootstrapCI(stats.k, stats.n);
     stats.ci_bayesian = bayesianBetaCI(stats.k, stats.n);
+    stats.ci_wilson = wilsonScoreCI(stats.k, stats.n); // deterministic; width varies with k,n
     configs[configId] = stats;
   }
 
