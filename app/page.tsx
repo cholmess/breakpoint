@@ -44,6 +44,7 @@ export default function Dashboard() {
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
   const [runMode, setRunMode] = useState<"simulate" | "real">("simulate");
+  const [runSize, setRunSize] = useState<"quick" | "full">("quick");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
   
   // Data from API
@@ -126,10 +127,17 @@ export default function Dashboard() {
     setError(null);
     setProgress(0);
     
-    // Calculate estimated time and increment rate based on mode
-    // Simulate mode: ~20 seconds for 400 probes (batched processing)
-    // Real mode: ~3-4 minutes with 5 concurrent requests (rate limiter controls max concurrency)
-    const estimatedTimeMs = runMode === "simulate" ? 20000 : 210000; // 20s vs 3.5min
+    // Calculate estimated time and increment rate based on mode + run size
+    // Quick: 20 prompts × 2 configs = 40 probes. Full: 200 × 2 = 400 probes
+    const probeCount = runSize === "quick" ? 40 : 400;
+    const estimatedTimeMs =
+      runMode === "simulate"
+        ? runSize === "quick"
+          ? 5000   // 40 probes batched ~5s
+          : 20000  // 400 probes ~20s
+        : runSize === "quick"
+          ? 45000  // 40 probes real ~30-60s
+          : 210000; // 400 probes real ~3.5min
     const progressCap = 95; // Allow progress up to 95%, then wait for completion
     const updateIntervalMs = 600; // Update every 600ms
     const incrementsToReachCap = (estimatedTimeMs / updateIntervalMs) * (progressCap / 100);
@@ -165,6 +173,7 @@ export default function Dashboard() {
           configA,
           configB,
           promptFamily: "all",
+          runSize,
           seed: 42,
           mode: runMode,
         }),
@@ -194,7 +203,7 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
     }
-  }, [configA, configB, runMode]);
+  }, [configA, configB, runMode, runSize]);
 
   return (
     <div className="min-h-screen gradient-mesh">
@@ -241,7 +250,7 @@ export default function Dashboard() {
                 <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
                   Run Mode
                 </div>
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => setRunMode("simulate")}
@@ -265,6 +274,32 @@ export default function Dashboard() {
                     )}
                   >
                     Real API
+                  </button>
+                </div>
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setRunSize("quick")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      runSize === "quick"
+                        ? "bg-primary/20 text-primary border-primary/50 dark:bg-primary/10"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Quick (20 prompts)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRunSize("full")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      runSize === "full"
+                        ? "bg-primary/20 text-primary border-primary/50 dark:bg-primary/10"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Full (200 prompts)
                   </button>
                 </div>
                 {missingKey && (
@@ -300,7 +335,11 @@ export default function Dashboard() {
                 <div className="text-base text-muted-foreground mb-4 leading-relaxed">
                   {progress >= 95 
                     ? "Finalizing results..." 
-                    : `Running simulation... (est. ${runMode === "simulate" ? "~20s" : "~3-4min"} for ~400 probes)`
+                    : `Running simulation... (est. ${
+                        runMode === "simulate"
+                          ? runSize === "quick" ? "~5s" : "~20s"
+                          : runSize === "quick" ? "~30-60s" : "~3-4min"
+                      } for ~${runSize === "quick" ? "40" : "400"} probes)`
                   }
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
