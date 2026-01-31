@@ -1,0 +1,1602 @@
+﻿[
+    {
+        "id":  "p_001",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of France?"
+    },
+    {
+        "id":  "p_002",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to fetch the latest data."
+    },
+    {
+        "id":  "p_003",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of TypeScript in one sentence."
+    },
+    {
+        "id":  "p_004",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of climate policy?"
+    },
+    {
+        "id":  "p_005",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to look up the record."
+    },
+    {
+        "id":  "p_006",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of legal contracts in one sentence."
+    },
+    {
+        "id":  "p_007",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of Python?"
+    },
+    {
+        "id":  "p_008",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to validate the input."
+    },
+    {
+        "id":  "p_009",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of France in one sentence."
+    },
+    {
+        "id":  "p_010",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of machine learning?"
+    },
+    {
+        "id":  "p_011",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to compute the result."
+    },
+    {
+        "id":  "p_012",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of climate policy in one sentence."
+    },
+    {
+        "id":  "p_013",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of REST APIs?"
+    },
+    {
+        "id":  "p_014",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to format the output."
+    },
+    {
+        "id":  "p_015",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of Python in one sentence."
+    },
+    {
+        "id":  "p_016",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of healthcare?"
+    },
+    {
+        "id":  "p_017",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to fetch the latest data."
+    },
+    {
+        "id":  "p_018",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of machine learning in one sentence."
+    },
+    {
+        "id":  "p_019",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of TypeScript?"
+    },
+    {
+        "id":  "p_020",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to look up the record."
+    },
+    {
+        "id":  "p_021",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of REST APIs in one sentence."
+    },
+    {
+        "id":  "p_022",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of legal contracts?"
+    },
+    {
+        "id":  "p_023",
+        "use_case":  "code_help",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Write a one-liner in JavaScript to validate the input."
+    },
+    {
+        "id":  "p_024",
+        "use_case":  "summarization",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "Summarize the concept of healthcare in one sentence."
+    },
+    {
+        "id":  "p_025",
+        "use_case":  "general_qa",
+        "family":  "short_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "What is the capital of France?"
+    },
+    {
+        "id":  "p_026",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the calculator tool to compute the result and return the result."
+    },
+    {
+        "id":  "p_027",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the search API to fetch the latest data."
+    },
+    {
+        "id":  "p_028",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the database lookup tool to validate the input and return the result."
+    },
+    {
+        "id":  "p_029",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the weather API to format the output."
+    },
+    {
+        "id":  "p_030",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the code executor tool to look up the record and return the result."
+    },
+    {
+        "id":  "p_031",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the document parser to compute the result."
+    },
+    {
+        "id":  "p_032",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the translation API tool to fetch the latest data and return the result."
+    },
+    {
+        "id":  "p_033",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the calendar to validate the input."
+    },
+    {
+        "id":  "p_034",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the calculator tool to format the output and return the result."
+    },
+    {
+        "id":  "p_035",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the search API to look up the record."
+    },
+    {
+        "id":  "p_036",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the database lookup tool to compute the result and return the result."
+    },
+    {
+        "id":  "p_037",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the weather API to fetch the latest data."
+    },
+    {
+        "id":  "p_038",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the code executor tool to validate the input and return the result."
+    },
+    {
+        "id":  "p_039",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the document parser to format the output."
+    },
+    {
+        "id":  "p_040",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the translation API tool to look up the record and return the result."
+    },
+    {
+        "id":  "p_041",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the calendar to compute the result."
+    },
+    {
+        "id":  "p_042",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the calculator tool to fetch the latest data and return the result."
+    },
+    {
+        "id":  "p_043",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the search API to validate the input."
+    },
+    {
+        "id":  "p_044",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the database lookup tool to format the output and return the result."
+    },
+    {
+        "id":  "p_045",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the weather API to look up the record."
+    },
+    {
+        "id":  "p_046",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the code executor tool to compute the result and return the result."
+    },
+    {
+        "id":  "p_047",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the document parser to fetch the latest data."
+    },
+    {
+        "id":  "p_048",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the translation API tool to validate the input and return the result."
+    },
+    {
+        "id":  "p_049",
+        "use_case":  "general_qa",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Call the calendar to format the output."
+    },
+    {
+        "id":  "p_050",
+        "use_case":  "code_help",
+        "family":  "short_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Use the calculator tool to look up the record and return the result."
+    },
+    {
+        "id":  "p_051",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_052",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"The following excerpt from the report...\" Question: Summarize the key point."
+    },
+    {
+        "id":  "p_053",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Answer the following and cite: Which clause applies here?"
+    },
+    {
+        "id":  "p_054",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"Section 3.2 of the agreement states that...\" Question: What are the risks?"
+    },
+    {
+        "id":  "p_055",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_056",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"According to the contract dated...\" Question: Summarize the key point."
+    },
+    {
+        "id":  "p_057",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Answer the following and cite: Which clause applies here?"
+    },
+    {
+        "id":  "p_058",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"The following excerpt from the report...\" Question: What are the risks?"
+    },
+    {
+        "id":  "p_059",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_060",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"Section 3.2 of the agreement states that...\" Question: Summarize the key point."
+    },
+    {
+        "id":  "p_061",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Answer the following and cite: Which clause applies here?"
+    },
+    {
+        "id":  "p_062",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"According to the contract dated...\" Question: What are the risks?"
+    },
+    {
+        "id":  "p_063",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_064",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"The following excerpt from the report...\" Question: Summarize the key point."
+    },
+    {
+        "id":  "p_065",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Answer the following and cite: Which clause applies here?"
+    },
+    {
+        "id":  "p_066",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"Section 3.2 of the agreement states that...\" Question: What are the risks?"
+    },
+    {
+        "id":  "p_067",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_068",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"According to the contract dated...\" Question: Summarize the key point."
+    },
+    {
+        "id":  "p_069",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Answer the following and cite: Which clause applies here?"
+    },
+    {
+        "id":  "p_070",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"The following excerpt from the report...\" Question: What are the risks?"
+    },
+    {
+        "id":  "p_071",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_072",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"Section 3.2 of the agreement states that...\" Question: Summarize the key point."
+    },
+    {
+        "id":  "p_073",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Answer the following and cite: Which clause applies here?"
+    },
+    {
+        "id":  "p_074",
+        "use_case":  "legal_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Given: \"According to the contract dated...\" Question: What are the risks?"
+    },
+    {
+        "id":  "p_075",
+        "use_case":  "doc_qa",
+        "family":  "short_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Answer the following and cite: What is the main obligation?"
+    },
+    {
+        "id":  "p_076",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"Section 3.2 of the agreement states that...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_077",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the search API and document parser. Document: \"The following excerpt from the report...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_078",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"According to the contract dated...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_079",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the weather API and document parser. Document: \"Section 3.2 of the agreement states that...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_080",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"The following excerpt from the report...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_081",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser and document parser. Document: \"According to the contract dated...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_082",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"Section 3.2 of the agreement states that...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_083",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the calendar and document parser. Document: \"The following excerpt from the report...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_084",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"According to the contract dated...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_085",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the search API and document parser. Document: \"Section 3.2 of the agreement states that...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_086",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"The following excerpt from the report...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_087",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the weather API and document parser. Document: \"According to the contract dated...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_088",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"Section 3.2 of the agreement states that...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_089",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser and document parser. Document: \"The following excerpt from the report...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_090",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"According to the contract dated...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_091",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the calendar and document parser. Document: \"Section 3.2 of the agreement states that...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_092",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"The following excerpt from the report...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_093",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the search API and document parser. Document: \"According to the contract dated...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_094",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"Section 3.2 of the agreement states that...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_095",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the weather API and document parser. Document: \"The following excerpt from the report...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_096",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"According to the contract dated...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_097",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser and document parser. Document: \"Section 3.2 of the agreement states that...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_098",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"The following excerpt from the report...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_099",
+        "use_case":  "code_help",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the calendar and document parser. Document: \"According to the contract dated...\" Run the tool and cite the source."
+    },
+    {
+        "id":  "p_100",
+        "use_case":  "doc_qa",
+        "family":  "short_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Using the document parser and citation tool, from this text: \"Section 3.2 of the agreement states that...\" extract the answer and cite the relevant sentence."
+    },
+    {
+        "id":  "p_101",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on France as the domain."
+    },
+    {
+        "id":  "p_102",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_103",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on TypeScript as the domain."
+    },
+    {
+        "id":  "p_104",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_105",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on REST APIs as the domain."
+    },
+    {
+        "id":  "p_106",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_107",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on Python as the domain."
+    },
+    {
+        "id":  "p_108",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_109",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on France as the domain."
+    },
+    {
+        "id":  "p_110",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_111",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on TypeScript as the domain."
+    },
+    {
+        "id":  "p_112",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_113",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on REST APIs as the domain."
+    },
+    {
+        "id":  "p_114",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_115",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on Python as the domain."
+    },
+    {
+        "id":  "p_116",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_117",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on France as the domain."
+    },
+    {
+        "id":  "p_118",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_119",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on TypeScript as the domain."
+    },
+    {
+        "id":  "p_120",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_121",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on REST APIs as the domain."
+    },
+    {
+        "id":  "p_122",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_123",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on Python as the domain."
+    },
+    {
+        "id":  "p_124",
+        "use_case":  "summarization",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "I need a clear summary of the following: (1) What is  (2) Why does it matter in practice? (3) What are two main challenges? Keep each part to one or two sentences."
+    },
+    {
+        "id":  "p_125",
+        "use_case":  "legal_qa",
+        "family":  "long_plain",
+        "expects_citations":  false,
+        "expects_tools":  false,
+        "prompt":  "We have a contract that includes clauses on liability, termination, and dispute resolution. Please explain how liability is limited in such agreements and what typical termination conditions apply. Focus on France as the domain."
+    },
+    {
+        "id":  "p_126",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the calculator to get the schema. Then use the code executor to compute the result based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_127",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the search API to fetch the latest data. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_128",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the database lookup to get the schema. Then use the code executor to validate the input based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_129",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the weather API to format the output. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_130",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the code executor to get the schema. Then use the code executor to look up the record based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_131",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the document parser to compute the result. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_132",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the translation API to get the schema. Then use the code executor to fetch the latest data based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_133",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the calendar to validate the input. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_134",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the calculator to get the schema. Then use the code executor to format the output based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_135",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the search API to look up the record. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_136",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the database lookup to get the schema. Then use the code executor to compute the result based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_137",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the weather API to fetch the latest data. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_138",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the code executor to get the schema. Then use the code executor to validate the input based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_139",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the document parser to format the output. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_140",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the translation API to get the schema. Then use the code executor to look up the record based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_141",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the calendar to compute the result. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_142",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the calculator to get the schema. Then use the code executor to fetch the latest data based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_143",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the search API to validate the input. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_144",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the database lookup to get the schema. Then use the code executor to format the output based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_145",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the weather API to look up the record. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_146",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the code executor to get the schema. Then use the code executor to compute the result based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_147",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the document parser to fetch the latest data. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_148",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the translation API to get the schema. Then use the code executor to validate the input based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_149",
+        "use_case":  "general_qa",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "Step 1: Use the calendar to format the output. Step 2: Validate the output. Step 3: Format it for the API response. Describe what you would do at each step."
+    },
+    {
+        "id":  "p_150",
+        "use_case":  "code_help",
+        "family":  "long_tool_heavy",
+        "expects_citations":  false,
+        "expects_tools":  true,
+        "prompt":  "First call the calculator to get the schema. Then use the code executor to look up the record based on that schema. Return both the schema and the result."
+    },
+    {
+        "id":  "p_151",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_152",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"The following excerpt from the report...\" Please answer: Summarize the key point. Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_153",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Tasks: (1) Which clause applies here? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_154",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"Section 3.2 of the agreement states that...\" Please answer: What are the risks? Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_155",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_156",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"According to the contract dated...\" Please answer: Summarize the key point. Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_157",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Tasks: (1) Which clause applies here? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_158",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"The following excerpt from the report...\" Please answer: What are the risks? Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_159",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_160",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"Section 3.2 of the agreement states that...\" Please answer: Summarize the key point. Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_161",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Tasks: (1) Which clause applies here? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_162",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"According to the contract dated...\" Please answer: What are the risks? Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_163",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_164",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"The following excerpt from the report...\" Please answer: Summarize the key point. Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_165",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Tasks: (1) Which clause applies here? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_166",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"Section 3.2 of the agreement states that...\" Please answer: What are the risks? Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_167",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_168",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"According to the contract dated...\" Please answer: Summarize the key point. Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_169",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Tasks: (1) Which clause applies here? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_170",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"The following excerpt from the report...\" Please answer: What are the risks? Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_171",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"According to the contract dated...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_172",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"Section 3.2 of the agreement states that...\" Please answer: Summarize the key point. Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_173",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"The following excerpt from the report...\" Tasks: (1) Which clause applies here? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_174",
+        "use_case":  "legal_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Consider the following contractual text: \"According to the contract dated...\" Please answer: What are the risks? Provide your answer and cite the exact phrase from the text that supports it."
+    },
+    {
+        "id":  "p_175",
+        "use_case":  "doc_qa",
+        "family":  "long_doc_grounded",
+        "expects_citations":  true,
+        "expects_tools":  false,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Tasks: (1) What is the main obligation? (2) List any assumptions you made. (3) Cite the sentence(s) that support your answer."
+    },
+    {
+        "id":  "p_176",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"Section 3.2 of the agreement states that...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    },
+    {
+        "id":  "p_177",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"The following excerpt from the report...\" Use the search API to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_178",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"According to the contract dated...\" Then use the citation tool to extract the answer to: Which clause applies here?. Return the answer with citations."
+    },
+    {
+        "id":  "p_179",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Use the weather API to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_180",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"The following excerpt from the report...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    },
+    {
+        "id":  "p_181",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"According to the contract dated...\" Use the document parser to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_182",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"Section 3.2 of the agreement states that...\" Then use the citation tool to extract the answer to: Which clause applies here?. Return the answer with citations."
+    },
+    {
+        "id":  "p_183",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"The following excerpt from the report...\" Use the calendar to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_184",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"According to the contract dated...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    },
+    {
+        "id":  "p_185",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Use the search API to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_186",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"The following excerpt from the report...\" Then use the citation tool to extract the answer to: Which clause applies here?. Return the answer with citations."
+    },
+    {
+        "id":  "p_187",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"According to the contract dated...\" Use the weather API to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_188",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"Section 3.2 of the agreement states that...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    },
+    {
+        "id":  "p_189",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"The following excerpt from the report...\" Use the document parser to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_190",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"According to the contract dated...\" Then use the citation tool to extract the answer to: Which clause applies here?. Return the answer with citations."
+    },
+    {
+        "id":  "p_191",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Use the calendar to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_192",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"The following excerpt from the report...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    },
+    {
+        "id":  "p_193",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"According to the contract dated...\" Use the search API to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_194",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"Section 3.2 of the agreement states that...\" Then use the citation tool to extract the answer to: Which clause applies here?. Return the answer with citations."
+    },
+    {
+        "id":  "p_195",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"The following excerpt from the report...\" Use the weather API to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_196",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"According to the contract dated...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    },
+    {
+        "id":  "p_197",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"Section 3.2 of the agreement states that...\" Use the document parser to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_198",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"The following excerpt from the report...\" Then use the citation tool to extract the answer to: Which clause applies here?. Return the answer with citations."
+    },
+    {
+        "id":  "p_199",
+        "use_case":  "legal_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Document: \"According to the contract dated...\" Use the calendar to validate the data in the document, then cite the relevant sections that support your validation result."
+    },
+    {
+        "id":  "p_200",
+        "use_case":  "doc_qa",
+        "family":  "long_tool_and_doc",
+        "expects_citations":  true,
+        "expects_tools":  true,
+        "prompt":  "Use the document parser tool on this text: \"Section 3.2 of the agreement states that...\" Then use the citation tool to extract the answer to: What is the main obligation?. Return the answer with citations."
+    }
+]

@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PromptSuite",
+  "description": "Synthetic prompt suite record (per Idea2 workplan)",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "family", "use_case", "prompt", "expects_tools", "expects_citations"],
+    "properties": {
+      "id": { "type": "string", "pattern": "^p_[0-9]{3}$" },
+      "family": {
+        "type": "string",
+        "enum": [
+          "short_plain",
+          "short_tool_heavy",
+          "short_doc_grounded",
+          "short_tool_and_doc",
+          "long_plain",
+          "long_tool_heavy",
+          "long_doc_grounded",
+          "long_tool_and_doc"
+        ]
+      },
+      "use_case": {
+        "type": "string",
+        "enum": ["legal_qa", "general_qa", "summarization", "code_help", "doc_qa"]
+      },
+      "prompt": { "type": "string" },
+      "expects_tools": { "type": "boolean" },
+      "expects_citations": { "type": "boolean" }
+    }
+  }
+}
