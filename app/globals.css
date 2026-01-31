@@ -264,3 +264,26 @@
     transform: translate(-50%, -50%) scale(0.3);
   }
 }
+
+/* Fix Recharts hover background and tooltip text color */
+.recharts-tooltip-cursor,
+.recharts-rectangle.recharts-tooltip-cursor,
+.recharts-active-shape {
+  fill: transparent !important;
+  background: transparent !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: white !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label,
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item {
+  color: white !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-value {
+  color: white !important;
+}

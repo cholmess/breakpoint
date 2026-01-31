@@ -6,11 +6,12 @@ import { TrafficLight } from "@/components/traffic-light";
 import { ProbabilityCard } from "@/components/probability-card";
 import { DistributionCharts } from "@/components/distribution-charts";
 import { FailureBreakdown } from "@/components/failure-breakdown";
-import { PromptSelector } from "@/components/prompt-selector";
 import { ConfidenceBand } from "@/components/confidence-band";
 import { OrbTrail } from "@/components/orb-trail";
 import { ResultsSummary } from "@/components/results-summary";
-import { Activity, Zap } from "lucide-react";
+import { Activity, Zap, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 // Default configs matching the schema
@@ -41,7 +42,6 @@ const defaultConfigB: Config = {
 export default function Dashboard() {
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
-  const [selectedPrompt, setSelectedPrompt] = useState("all");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
   
   // Data from API
@@ -108,7 +108,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           configA,
           configB,
-          promptFamily: selectedPrompt,
+          promptFamily: "all",
           seed: 42,
         }),
       });
@@ -132,7 +132,7 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
     }
-  }, [configA, configB, selectedPrompt]);
+  }, [configA, configB]);
 
   return (
     <div className="min-h-screen gradient-mesh">
@@ -145,17 +145,17 @@ export default function Dashboard() {
               <Activity className="h-4 w-4 text-[#99e4f2]" />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight neon-text-subtle">
+              <h1 className="text-2xl font-bold tracking-tight neon-text-subtle leading-tight">
                 BreakPoint
               </h1>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 AI Observability Dashboard
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/50 border border-[#25924d]/30 text-xs">
-              <Zap className="h-3 w-3 text-[#25924d]" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/50 border border-[#25924d]/30 text-sm">
+              <Zap className="h-4 w-4 text-[#25924d]" />
               <span className="font-medium text-[#25924d]">A/B Testing Mode</span>
             </div>
           </div>
@@ -166,19 +166,25 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-12 gap-4">
           {/* Left Column - Config & Controls */}
-          <div className="col-span-4 space-y-4">
+          <div className="col-span-4 space-y-4 sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
             <FlipCard
               configA={configA}
               configB={configB}
               onConfigAChange={setConfigA}
               onConfigBChange={setConfigB}
             />
-            <PromptSelector
-              selected={selectedPrompt}
-              onSelect={setSelectedPrompt}
-              onRunSimulation={runSimulation}
-              isRunning={status === "running"}
-            />
+            <Card className="py-3 glass-card">
+              <CardContent className="p-4">
+                <Button
+                  onClick={runSimulation}
+                  disabled={status === "running"}
+                  className="w-full bg-[#25924d] hover:bg-[#25924d]/90 text-white"
+                >
+                  <Play className="h-3.5 w-3.5 mr-1.5" />
+                  {status === "running" ? "Running Simulation..." : "Run Simulation"}
+                </Button>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Middle Column - Traffic Light & Probability */}
@@ -189,12 +195,12 @@ export default function Dashboard() {
           {/* Right Column - Results */}
           <div className="col-span-7 space-y-4">
             {loading ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">
+              <div className="text-center py-8 text-base text-muted-foreground leading-relaxed">
                 Loading analysis data...
               </div>
             ) : status === "running" ? (
               <div className="text-center py-8 space-y-4">
-                <div className="text-sm text-muted-foreground mb-4">
+                <div className="text-base text-muted-foreground mb-4 leading-relaxed">
                   Running simulation... (est. 30s for ~400 probes)
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
@@ -203,26 +209,27 @@ export default function Dashboard() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <div className="text-xs text-muted-foreground">{progress}%</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">{progress}%</div>
               </div>
             ) : error ? (
-              <div className="text-center py-8 space-y-2">
-                <div className="text-sm font-medium text-destructive">{error}</div>
-                <div className="text-xs text-muted-foreground">
+              <div className="text-center py-8 space-y-3">
+                <div className="text-base font-medium text-destructive leading-relaxed">{error}</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">
                   Please check your configuration and try again.
                 </div>
               </div>
             ) : !comparisonsData || comparisonsData.comparisons.length === 0 ? (
-              <div className="text-center py-8 space-y-2">
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center py-8 space-y-3">
+                <p className="text-base text-muted-foreground leading-relaxed">
                   No comparisons yet. Run a simulation to see results.
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Configure Config A and Config B, select a prompt family, then click "Run Simulation".
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Configure Config A and Config B, then click "Run Simulation".
                 </p>
               </div>
             ) : (
-              <>
+              <div className="space-y-4">
+                {/* Row 1: Results Summary */}
                 <ResultsSummary
                   analysisData={analysisData}
                   comparisonsData={comparisonsData}
@@ -230,23 +237,38 @@ export default function Dashboard() {
                   configA={configA}
                   configB={configB}
                 />
-                <ProbabilityCard
-                  comparisons={comparisonsData?.comparisons || []}
-                  selectedConfigA={configA.id}
-                  selectedConfigB={configB.id}
-                  isRunning={status === "running"}
-                />
-                {analysisData && (
-                  <ConfidenceBand analysisData={analysisData} />
-                )}
+                
+                {/* Row 2: Probability Card and Confidence Band side by side */}
+                <div className="grid grid-cols-2 gap-4">
+                  <ProbabilityCard
+                    comparisons={comparisonsData?.comparisons || []}
+                    selectedConfigA={configA.id}
+                    selectedConfigB={configB.id}
+                    isRunning={status === "running"}
+                  />
+                  {analysisData && (
+                    <ConfidenceBand analysisData={analysisData} />
+                  )}
+                </div>
+                
+                {/* Row 3: Failure Mode Distribution */}
                 <DistributionCharts
                   byFailureMode={distributionsData?.by_failure_mode || {}}
                   byPromptFamily={distributionsData?.by_prompt_family || {}}
+                  type="failure-mode"
                 />
+                
+                {/* Row 4: Prompt Family Distribution */}
+                <DistributionCharts
+                  byFailureMode={distributionsData?.by_failure_mode || {}}
+                  byPromptFamily={distributionsData?.by_prompt_family || {}}
+                  type="prompt-family"
+                />
+                
                 <FailureBreakdown 
                   byFailureMode={distributionsData?.by_failure_mode || {}}
                 />
-              </>
+              </div>
             )}
           </div>
         </div>

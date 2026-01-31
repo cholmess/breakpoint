@@ -139,8 +139,8 @@ export function ResultsSummary({
   return (
     <Card className="py-3 glass-card border-2 border-primary/20">
       <CardHeader className="py-2 px-4">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <Lightbulb className="h-3 w-3" />
+        <CardTitle className="text-lg font-bold uppercase tracking-wider neon-text-subtle flex items-center gap-2 leading-tight">
+          <Lightbulb className="h-4 w-4" />
           Results Summary
         </CardTitle>
       </CardHeader>
@@ -153,7 +153,7 @@ export function ResultsSummary({
             ) : (
               <CheckCircle2 className="h-4 w-4 text-[#25924d] mt-0.5 shrink-0" />
             )}
-            <p className="text-sm leading-relaxed text-foreground">
+            <p className="text-base leading-relaxed text-foreground">
               {summary}
             </p>
           </div>
@@ -162,12 +162,12 @@ export function ResultsSummary({
         {/* Reasoning Section */}
         {reasoning.length > 0 && (
           <div className="pt-3 border-t border-border">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+            <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
               Why This Matters
             </div>
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               {reasoning.map((reason, idx) => (
-                <li key={idx} className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2">
+                <li key={idx} className="text-base text-muted-foreground leading-relaxed flex items-start gap-2">
                   <span className="text-primary mt-1 shrink-0">•</span>
                   <span>{reason}</span>
                 </li>
@@ -180,24 +180,24 @@ export function ResultsSummary({
         {configAStats && configBStats && (
           <div className="pt-3 border-t border-border grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground leading-relaxed">
                 Config A Failure Rate
               </div>
-              <div className="text-lg font-bold font-mono text-[#95ccf9]">
+              <div className="text-2xl font-bold font-mono text-[#95ccf9] leading-tight">
                 {(configAStats.phat * 100).toFixed(1)}%
               </div>
-              <div className="text-[9px] text-muted-foreground">
+              <div className="text-sm text-muted-foreground leading-relaxed">
                 {configAStats.k} failures out of {configAStats.n} tests
               </div>
             </div>
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="space-y-2">
+              <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground leading-relaxed">
                 Config B Failure Rate
               </div>
-              <div className="text-lg font-bold font-mono text-[#25924d]">
+              <div className="text-2xl font-bold font-mono text-[#25924d] leading-tight">
                 {(configBStats.phat * 100).toFixed(1)}%
               </div>
-              <div className="text-[9px] text-muted-foreground">
+              <div className="text-sm text-muted-foreground leading-relaxed">
                 {configBStats.k} failures out of {configBStats.n} tests
               </div>
             </div>
