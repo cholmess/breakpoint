@@ -121,6 +121,14 @@ export async function callManusAPI(
 
     console.error(`Manus API failed for ${prompt.id} with ${config.id}:`, error);
 
+    // Only mark as timeout if it's an actual timeout (>60s) or timeout error
+    const isTimeout = latencyMs > 60000 || 
+      (error instanceof Error && (
+        error.message.includes("timeout") || 
+        error.message.includes("timed out") ||
+        error.message.includes("ETIMEDOUT")
+      ));
+
     return {
       prompt_id: prompt.id,
       config_id: config.id,
@@ -129,7 +137,7 @@ export async function callManusAPI(
       completion_tokens: 0,
       latency_ms: latencyMs,
       tool_calls: 0,
-      tool_timeouts: 1,
+      tool_timeouts: isTimeout ? 1 : 0,
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : String(error),
     };

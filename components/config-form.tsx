@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TokenStepper, roundToTokenStep } from "@/components/ui/token-stepper";
 import type { Config } from "@/types/dashboard";
 
 interface ConfigFormProps {
@@ -106,38 +107,37 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
 
         <div className="flex items-center justify-between gap-4">
           <Label className="text-xs shrink-0 w-24">Context Window</Label>
-          <Input
-            type="number"
-            value={config.context_window}
-            onChange={(e) =>
-              onChange({ ...config, context_window: Number(e.target.value) })
-            }
-            className="h-7 text-xs flex-1"
-            placeholder="tokens"
+          <TokenStepper
+            value={roundToTokenStep(config.context_window)}
+            onChange={(v) => onChange({ ...config, context_window: v })}
+            min={512}
+            max={128 * 1024}
+            className="flex-1"
+            aria-label="Context window (tokens)"
           />
         </div>
 
         <div className="flex items-center justify-between gap-4">
           <Label className="text-xs shrink-0 w-24">Chunk Size</Label>
-          <Input
-            type="number"
-            value={config.chunk_size}
-            onChange={(e) =>
-              onChange({ ...config, chunk_size: Number(e.target.value) })
-            }
-            className="h-7 text-xs flex-1"
+          <TokenStepper
+            value={roundToTokenStep(config.chunk_size)}
+            onChange={(v) => onChange({ ...config, chunk_size: v })}
+            min={512}
+            max={8192}
+            className="flex-1"
+            aria-label="Chunk size (tokens)"
           />
         </div>
 
         <div className="flex items-center justify-between gap-4">
           <Label className="text-xs shrink-0 w-24">Max Output</Label>
-          <Input
-            type="number"
-            value={config.max_output_tokens}
-            onChange={(e) =>
-              onChange({ ...config, max_output_tokens: Number(e.target.value) })
-            }
-            className="h-7 text-xs flex-1"
+          <TokenStepper
+            value={roundToTokenStep(config.max_output_tokens)}
+            onChange={(v) => onChange({ ...config, max_output_tokens: v })}
+            min={512}
+            max={32 * 1024}
+            className="flex-1"
+            aria-label="Max output tokens"
           />
         </div>
 

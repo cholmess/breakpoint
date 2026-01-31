@@ -103,6 +103,7 @@ export interface Stats {
   phat: number; // failure probability estimate (k/n)
   ci_bootstrap?: [number, number]; // [lower, upper] bootstrap CI
   ci_bayesian?: [number, number]; // [lower, upper] Bayesian CI
+  ci_wilson?: [number, number]; // [lower, upper] Wilson score CI (deterministic, width varies with k,n)
 }
 
 export interface AnalysisOutput {

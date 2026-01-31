@@ -42,6 +42,7 @@ const defaultConfigB: Config = {
 export default function Dashboard() {
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
+  const [runMode, setRunMode] = useState<"simulate" | "real">("simulate");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
   
   // Data from API
@@ -51,6 +52,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  
+  // Store the configs that were actually used in the last simulation
+  const [simulatedConfigA, setSimulatedConfigA] = useState<Config | null>(null);
+  const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
 
   // Fetch data from API routes
   useEffect(() => {
@@ -110,6 +115,7 @@ export default function Dashboard() {
           configB,
           promptFamily: "all",
           seed: 42,
+          mode: runMode,
         }),
       });
       
@@ -125,6 +131,9 @@ export default function Dashboard() {
       setAnalysisData(data.analysis);
       setComparisonsData(data.comparisons);
       setDistributionsData(data.distributions);
+      // Store the configs that were actually used in this simulation
+      setSimulatedConfigA(data.configA || configA);
+      setSimulatedConfigB(data.configB || configB);
       setStatus("success");
     } catch (err) {
       clearInterval(progressInterval);
@@ -132,7 +141,7 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
     }
-  }, [configA, configB]);
+  }, [configA, configB, runMode]);
 
   return (
     <div className="min-h-screen gradient-mesh">
@@ -173,6 +182,7 @@ export default function Dashboard() {
               onConfigAChange={setConfigA}
               onConfigBChange={setConfigB}
             />
+<<<<<<< HEAD
             <Card className="py-3 glass-card">
               <CardContent className="p-4">
                 <Button
@@ -185,6 +195,30 @@ export default function Dashboard() {
                 </Button>
               </CardContent>
             </Card>
+=======
+            {/* Run mode: simulate (default) or real API calls */}
+            <div className="rounded-lg border bg-card p-3">
+              <label className="text-sm font-medium mb-2 block">Run mode</label>
+              <select
+                value={runMode}
+                onChange={(e) => setRunMode(e.target.value as "simulate" | "real")}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                disabled={status === "running"}
+              >
+                <option value="simulate">Simulate (no API keys)</option>
+                <option value="real">Real (call LLM APIs)</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {runMode === "simulate" ? "Uses generated telemetry." : "Requires API keys in .env."}
+              </p>
+            </div>
+            <PromptSelector
+              selected={selectedPrompt}
+              onSelect={setSelectedPrompt}
+              onRunSimulation={runSimulation}
+              isRunning={status === "running"}
+            />
+>>>>>>> origin/main
           </div>
 
           {/* Middle Column - Traffic Light & Probability */}
@@ -234,16 +268,16 @@ export default function Dashboard() {
                   analysisData={analysisData}
                   comparisonsData={comparisonsData}
                   distributionsData={distributionsData}
-                  configA={configA}
-                  configB={configB}
+                  configA={simulatedConfigA || configA}
+                  configB={simulatedConfigB || configB}
                 />
                 
                 {/* Row 2: Probability Card and Confidence Band side by side */}
                 <div className="grid grid-cols-2 gap-4">
                   <ProbabilityCard
                     comparisons={comparisonsData?.comparisons || []}
-                    selectedConfigA={configA.id}
-                    selectedConfigB={configB.id}
+                    selectedConfigA={(simulatedConfigA || configA).id}
+                    selectedConfigB={(simulatedConfigB || configB).id}
                     isRunning={status === "running"}
                   />
                   {analysisData && (

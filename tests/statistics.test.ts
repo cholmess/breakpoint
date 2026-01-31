@@ -10,6 +10,7 @@ import { estimatePhat } from "../src/lib/probability";
 import {
   bootstrapCI,
   bayesianBetaCI,
+  wilsonScoreCI,
   compareConfigs,
   setStatsSeed,
 } from "../src/lib/statistics";
@@ -125,6 +126,28 @@ function testBootstrapCI(): void {
   assert.ok(lo90 >= 0 && hi90 <= 1 && lo90 <= hi90, "90% CI bounds valid");
 
   console.log("  bootstrapCI: ok");
+}
+
+// --- wilsonScoreCI ---
+function testWilsonScoreCI(): void {
+  const [lo0, hi0] = wilsonScoreCI(0, 100);
+  assert.ok(lo0 >= 0 && lo0 < 0.01, "k=0: lower near 0");
+  assert.ok(hi0 > 0 && hi0 < 0.1, "k=0: upper should be small");
+
+  const [lo50, hi50] = wilsonScoreCI(50, 100);
+  assert.ok(lo50 > 0.4 && hi50 < 0.6, "k=50,n=100: CI around 0.5");
+
+  // CI width should be wider near p=0.5 than near p=0
+  const width0 = wilsonScoreCI(0, 100)[1] - wilsonScoreCI(0, 100)[0];
+  const width50 = wilsonScoreCI(50, 100)[1] - wilsonScoreCI(50, 100)[0];
+  assert.ok(width50 > width0, "CI width at p=0.5 should be wider than at p=0");
+
+  // Same n, different k: different widths (narrow at extremes, wider in middle)
+  const width5 = wilsonScoreCI(5, 100)[1] - wilsonScoreCI(5, 100)[0];
+  const width95 = wilsonScoreCI(95, 100)[1] - wilsonScoreCI(95, 100)[0];
+  assert.ok(width50 > width5 && width50 > width95, "CI wider near p=0.5");
+
+  console.log("  wilsonScoreCI: ok");
 }
 
 // --- bayesianBetaCI ---
@@ -252,6 +275,7 @@ function run(): void {
   console.log("Person B statistics tests\n");
   testEstimatePhat();
   testBootstrapCI();
+  testWilsonScoreCI();
   testBayesianBetaCI();
   testCompareConfigs();
   testModeDistributions();

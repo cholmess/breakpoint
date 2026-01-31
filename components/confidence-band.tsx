@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  LineChart,
+  ComposedChart,
+  Area,
   Line,
   XAxis,
   YAxis,
@@ -40,18 +41,26 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
     );
   }
 
-  // Transform data for chart
+  // Prefer Wilson score CI (deterministic, width varies visibly with k and n)
   const chartData = configs.map((config) => {
-    const ci = config.ci_bootstrap || config.ci_bayesian;
+    const ci = config.ci_wilson ?? config.ci_bootstrap ?? config.ci_bayesian;
+    const lower = ci ? ci[0] * 100 : config.phat * 100;
+    const upper = ci ? ci[1] * 100 : config.phat * 100;
     return {
       config: config.config_id,
-      phat: config.phat * 100, // Convert to percentage
-      lower: ci ? ci[0] * 100 : config.phat * 100,
-      upper: ci ? ci[1] * 100 : config.phat * 100,
+      phat: config.phat * 100,
+      lower,
+      upper,
+      bandHeight: Math.max(0, upper - lower), // for stacked Area: corridor from lower to upper
       k: config.k,
       n: config.n,
     };
   });
+
+  // Data-driven Y domain so CI corridors look visibly different (zoom into data range)
+  const maxUpper = Math.max(...chartData.map((d) => d.upper), 0);
+  const yDomainMax = Math.max(15, Math.ceil(maxUpper * 1.25));
+  const yDomain: [number, number] = [0, yDomainMax];
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload }: any) => {
@@ -85,7 +94,7 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
       <CardContent className="p-2">
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <ComposedChart
               data={chartData}
               margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
             >
@@ -103,50 +112,37 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
                 tick={{ fontSize: 12 }}
                 stroke="var(--muted-foreground)"
                 width={45}
-                label={{ 
-                  value: 'Failure Rate (%)', 
-                  angle: -90, 
-                  position: 'insideLeft',
-                  style: { fontSize: '12px', textAnchor: 'middle' }
+                domain={yDomain}
+                label={{
+                  value: "Failure Rate (%)",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { fontSize: "12px", textAnchor: "middle" },
                 }}
               />
               <Tooltip content={<CustomTooltip />} />
               <ReferenceLine y={0} stroke="var(--border)" strokeDasharray="2 2" />
-              
-              {/* Confidence interval area (using error bars) */}
-              {chartData.map((entry, index) => (
-                <g key={`ci-${index}`}>
-                  {/* Lower bound line */}
-                  <line
-                    x1={index * (100 / chartData.length) + 5}
-                    x2={index * (100 / chartData.length) + 5}
-                    y1={((entry.lower / 100) * 200)}
-                    y2={((entry.upper / 100) * 200)}
-                    stroke="var(--muted-foreground)"
-                    strokeWidth={2}
-                    opacity={0.3}
-                  />
-                  {/* Upper and lower ticks */}
-                  <line
-                    x1={index * (100 / chartData.length) + 2}
-                    x2={index * (100 / chartData.length) + 8}
-                    y1={((entry.lower / 100) * 200)}
-                    y2={((entry.lower / 100) * 200)}
-                    stroke="var(--muted-foreground)"
-                    strokeWidth={1.5}
-                  />
-                  <line
-                    x1={index * (100 / chartData.length) + 2}
-                    x2={index * (100 / chartData.length) + 8}
-                    y1={((entry.upper / 100) * 200)}
-                    y2={((entry.upper / 100) * 200)}
-                    stroke="var(--muted-foreground)"
-                    strokeWidth={1.5}
-                  />
-                </g>
-              ))}
-              
-              {/* Failure rate line */}
+
+              {/* Confidence corridor: stacked Area so band = lower..upper */}
+              <Area
+                type="monotone"
+                dataKey="lower"
+                stackId="ci"
+                fill="transparent"
+                stroke="none"
+                isAnimationActive={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="bandHeight"
+                stackId="ci"
+                fill="var(--muted-foreground)"
+                fillOpacity={0.25}
+                stroke="none"
+                isAnimationActive={false}
+              />
+
+              {/* Failure rate line on top */}
               <Line
                 type="monotone"
                 dataKey="phat"
@@ -155,7 +151,7 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
                 dot={{ fill: "var(--primary)", r: 4 }}
                 activeDot={{ r: 6 }}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
         <div className="mt-2 flex items-center justify-center gap-4 text-[9px] text-muted-foreground">
