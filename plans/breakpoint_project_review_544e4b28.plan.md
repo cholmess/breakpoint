@@ -22,19 +22,19 @@ todos:
     status: completed
   - id: b1-fix-test-fixtures
     content: "[Person B] Align test fixture config IDs or document that they are isolated mocks"
-    status: pending
+    status: completed
   - id: b2-fix-family-mismatch
     content: "[Person B] Change test mock family 'short_plain' to 'short' to match actual suite"
-    status: pending
+    status: completed
   - id: b3-add-alpha-tests
     content: "[Person B] Add tests for custom alpha parameter values in CI functions"
-    status: pending
+    status: completed
   - id: s1-fix-module-system
     content: "[Shared/A] Resolve module system mismatch between package.json (commonjs) and tsconfig (ESNext)"
     status: completed
   - id: s2-configure-npm-test
     content: "[Shared/B] Update package.json test script to run actual tests"
-    status: pending
+    status: completed
   - id: s3-run-e2e-verification
     content: "[All] Run full pipeline (probes -> analyze) and verify all outputs are generated correctly"
     status: completed

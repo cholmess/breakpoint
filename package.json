@@ -4,14 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:statistics": "npx tsx tests/statistics.test.ts",
-    "probes": "tsx src/cli/run-probes.ts",
-    "analyze": "tsx src/cli/run-analysis.ts",
-    "generate-prompts": "tsx src/cli/generate-domain-prompts.ts",
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+    "test": "npx tsx tests/statistics.test.ts && npx tsx tests/rules-engine.test.ts && npx tsx tests/timeline.test.ts && npx tsx tests/telemetry-logger.test.ts && npx tsx tests/llm-client.test.ts && npx tsx tests/probe-runner.test.ts"
   },
   "repository": {
     "type": "git",
@@ -26,22 +19,16 @@
   },
   "homepage": "https://github.com/cholmess/breakpoint#readme",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@types/node": "^25.1.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.24",
-    "dotenv": "^17.2.3",
     "next": "^16.1.6",
-    "openai": "^6.17.0",
     "postcss": "^8.5.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "tsx": "^4.21.0"
   }
 }

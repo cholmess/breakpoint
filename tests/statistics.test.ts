@@ -30,11 +30,11 @@ function loadFixture(): FailureEvent[] {
 
 function mockPrompts(): PromptRecord[] {
   return [
-    { id: "p_001", family: "short_plain", use_case: "general_qa", prompt: "?", expects_tools: false, expects_citations: false },
+    { id: "p_001", family: "short", use_case: "general_qa", prompt: "?", expects_tools: false, expects_citations: false },
     { id: "p_002", family: "long_context", use_case: "legal_qa", prompt: "?", expects_tools: false, expects_citations: false },
     { id: "p_003", family: "tool_heavy", use_case: "code_help", prompt: "?", expects_tools: true, expects_citations: false },
     { id: "p_004", family: "doc_grounded", use_case: "doc_qa", prompt: "?", expects_tools: false, expects_citations: true },
-    { id: "p_005", family: "short_plain", use_case: "summarization", prompt: "?", expects_tools: false, expects_citations: false },
+    { id: "p_005", family: "short", use_case: "summarization", prompt: "?", expects_tools: false, expects_citations: false },
     { id: "p_006", family: "long_context", use_case: "research", prompt: "?", expects_tools: false, expects_citations: false },
   ];
 }
@@ -98,6 +98,13 @@ function testBootstrapCI(): void {
 
   const [loKgtN, hiKgtN] = bootstrapCI(15, 10);
   assert.ok(loKgtN >= 0 && hiKgtN <= 1 && loKgtN <= hiKgtN, "k>n clamped");
+
+  // Test custom alpha parameter (90% CI should be narrower than 95% CI)
+  const [lo95, hi95] = bootstrapCI(5, 100);
+  const [lo90, hi90] = bootstrapCI(5, 100, 0.1);
+  assert.ok((hi90 - lo90) < (hi95 - lo95), "90% CI should be narrower than 95% CI");
+  assert.ok(lo90 >= 0 && hi90 <= 1, "90% CI bounds should be valid");
+
   console.log("  bootstrapCI: ok");
 }
 
@@ -121,6 +128,13 @@ function testBayesianBetaCI(): void {
 
   const [loKgtN, hiKgtN] = bayesianBetaCI(12, 10);
   assert.ok(loKgtN >= 0 && hiKgtN <= 1 && loKgtN <= hiKgtN, "k>n clamped");
+
+  // Test custom alpha parameter (90% credible interval should be narrower than 95% CI)
+  const [lo95, hi95] = bayesianBetaCI(5, 100);
+  const [lo90, hi90] = bayesianBetaCI(5, 100, 0.1);
+  assert.ok((hi90 - lo90) < (hi95 - lo95), "90% CI should be narrower than 95% CI");
+  assert.ok(lo90 >= 0 && hi90 <= 1, "90% CI bounds should be valid");
+
   console.log("  bayesianBetaCI: ok");
 }
 
