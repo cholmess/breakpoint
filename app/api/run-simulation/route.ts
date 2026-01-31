@@ -4,6 +4,7 @@ import {
   loadPrompts,
   setMode,
   setSeed,
+  filterPromptsByFamily,
 } from "@/src/lib/probe-runner";
 import { getEnhancedRules, evaluateAllRules } from "@/src/lib/rules-engine";
 import { buildBreakFirstTimeline } from "@/src/lib/timeline";
@@ -75,11 +76,7 @@ export async function POST(req: NextRequest) {
     setSeed(seed);
 
     const allPrompts = loadPrompts(PROMPTS_PATH);
-    // promptFamily filtering will be applied in A4; for now use all prompts
-    const prompts =
-      promptFamily && promptFamily !== "all"
-        ? allPrompts.filter((p) => p.family === promptFamily)
-        : allPrompts;
+    const prompts = filterPromptsByFamily(allPrompts, promptFamily || "all");
 
     const configs: ProbeConfig[] = [configA, configB];
 
