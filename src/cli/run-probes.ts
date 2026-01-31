@@ -4,6 +4,10 @@
  * Orchestrates the full pipeline: load configs/prompts, run probes, evaluate rules, build timeline
  */
 
+// Load environment variables from .env file
+import { config } from "dotenv";
+config();
+
 import * as fs from "fs";
 import * as path from "path";
 import {
@@ -11,6 +15,8 @@ import {
   loadPrompts,
   runAllProbes,
   setSeed,
+  setMode,
+  type ExecutionMode,
 } from "../lib/probe-runner";
 import {
   getEnhancedRules,
@@ -42,16 +48,77 @@ function writeOutput(filename: string, data: any): void {
 }
 
 /**
+ * Parse command line arguments
+ */
+function parseArgs(): { mode: ExecutionMode; seed: number } {
+  const args = process.argv.slice(2);
+  let mode: ExecutionMode = "simulate";
+  let seed = 42;
+  
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--mode" && i + 1 < args.length) {
+      const modeArg = args[i + 1];
+      if (modeArg !== "simulate" && modeArg !== "real") {
+        console.error(`Invalid mode: ${modeArg}. Must be "simulate" or "real"`);
+        process.exit(1);
+      }
+      mode = modeArg;
+    } else if (args[i] === "--seed" && i + 1 < args.length) {
+      seed = parseInt(args[i + 1], 10);
+      if (isNaN(seed)) {
+        console.error(`Invalid seed: ${args[i + 1]}. Must be a number`);
+        process.exit(1);
+      }
+    }
+  }
+  
+  // Check environment variables as fallback
+  if (process.env.MODE) {
+    const envMode = process.env.MODE;
+    if (envMode === "simulate" || envMode === "real") {
+      mode = envMode;
+    }
+  }
+  
+  if (process.env.SEED) {
+    const envSeed = parseInt(process.env.SEED, 10);
+    if (!isNaN(envSeed)) {
+      seed = envSeed;
+    }
+  }
+  
+  return { mode, seed };
+}
+
+/**
  * Main execution function
  */
 async function main() {
   console.log("🚀 Starting Probabilistic Failure Simulator - Person A Pipeline\n");
 
   try {
-    // Set deterministic seed for reproducibility
-    const seed = process.env.SEED ? parseInt(process.env.SEED, 10) : 42;
+    // Parse arguments
+    const { mode, seed } = parseArgs();
+    
+    // Set execution mode
+    setMode(mode);
+    console.log(`🎯 Mode: ${mode.toUpperCase()}`);
+    
+    if (mode === "real") {
+      console.log("   ⚠️  Real API calls will be made to Gemini");
+      if (!process.env.GEMINI_API_KEY) {
+        console.error("\n❌ Error: GEMINI_API_KEY not found in environment");
+        console.error("   Please create a .env file with your API key");
+        console.error("   Example: GEMINI_API_KEY=your_key_here");
+        process.exit(1);
+      }
+    } else {
+      console.log("   Using simulated telemetry (no API calls)");
+    }
+    
+    // Set deterministic seed for reproducibility (simulation mode only)
     setSeed(seed);
-    console.log(`📌 Using seed: ${seed}\n`);
+    console.log(`📌 Seed: ${seed}\n`);
 
     // Clear previous telemetry
     clearTelemetry();
@@ -70,9 +137,9 @@ async function main() {
       configMap.set(config.id, config);
     }
 
-    // Run all probes
+    // Run all probes (async now)
     console.log("🔬 Running probes...");
-    const results = runAllProbes(configs, prompts);
+    const results = await runAllProbes(configs, prompts);
     console.log(`   Completed ${results.length} probe(s)\n`);
 
     // Evaluate rules
@@ -113,6 +180,10 @@ async function main() {
     console.log(`   - output/telemetry.log`);
     console.log(`   - output/failure-events.json`);
     console.log(`   - output/break-first-timeline.json`);
+    
+    console.log("\n💡 Usage:");
+    console.log(`   Simulate: npm run probes -- --mode simulate`);
+    console.log(`   Real API: npm run probes -- --mode real`);
 
   } catch (error) {
     console.error("\n❌ Error:", error);

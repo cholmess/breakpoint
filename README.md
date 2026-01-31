@@ -15,16 +15,39 @@ This component implements the probe runner, telemetry logging, and deterministic
 
 ### Usage
 
-Run the probe pipeline:
+#### Quick Start (Simulation Mode)
+
+Run the probe pipeline with simulated telemetry:
 
 ```bash
-npm run probes
+npm run probes -- --mode simulate
 ```
 
-This will:
+#### Real API Mode
+
+To use real Google Gemini API calls:
+
+1. Create a `.env` file with your API key:
+   ```bash
+   cp .env.example .env
+   # Edit .env and add: GEMINI_API_KEY=your_key_here
+   ```
+
+2. Run with real API calls:
+   ```bash
+   npm run probes -- --mode real
+   ```
+
+**See [README_API_INTEGRATION.md](./README_API_INTEGRATION.md) for detailed API setup and usage.**
+
+#### Pipeline Steps
+
+The pipeline will:
 1. Load configurations from `configs/*.json`
 2. Load prompts from `data/prompts/suite.json`
 3. Run all probes (configs × prompts)
+   - **Simulate mode**: Generate synthetic telemetry
+   - **Real mode**: Call Gemini API and measure actual tokens/latency
 4. Evaluate rules and detect failures
 5. Build break-first timeline
 6. Write outputs to `output/`:
@@ -55,10 +78,42 @@ Sample configurations are in `configs/`:
 - `tool_heavy`: Data analysis and automation tasks
 - `doc_grounded`: Q&A with context requirements
 
-### Deterministic Seed
-
-The probe runner uses a deterministic seed (default: 42) for reproducible results. Set via environment variable:
+### Command Line Options
 
 ```bash
-SEED=123 npm run probes
+# Simulation mode (fast, free, reproducible)
+npm run probes -- --mode simulate
+
+# Real API mode (accurate, costs apply)
+npm run probes -- --mode real
+
+# Custom seed for simulation
+npm run probes -- --seed 123
+
+# Combine options
+npm run probes -- --mode simulate --seed 42
 ```
+
+### Modes
+
+**Simulate Mode** (default):
+- ✅ Fast execution (processes 100s of prompts in seconds)
+- ✅ No API costs
+- ✅ Deterministic/reproducible with seed
+- ❌ Synthetic telemetry (not real model behavior)
+
+**Real API Mode**:
+- ✅ Actual Gemini API calls
+- ✅ Real token counts and latency measurements
+- ✅ Accurate risk analysis based on real model behavior
+- ⚠️ API costs apply
+- ⚠️ Rate limited (5 concurrent, 200ms delays)
+
+### Next Steps
+
+To make this useful for the hackathon:
+
+1. **Replace generic prompts** with domain-specific ones for your use case
+2. **Use real API mode** to get actual telemetry from Gemini
+3. **Analyze failure patterns** to identify which configs are safer
+4. **Export risk analysis** to dashboard (Person C) and probability layer (Person B)

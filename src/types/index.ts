@@ -34,6 +34,7 @@ export interface TelemetryRecord {
   tool_calls: number;
   tool_timeouts: number;
   timestamp: string; // ISO 8601
+  error?: string; // Optional error message if API call failed
 }
 
 export type FailureMode =

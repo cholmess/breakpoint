@@ -12,8 +12,16 @@ import type {
   TelemetryRecord,
 } from "../types";
 import { logTelemetry } from "./telemetry-logger";
+import { callGeminiWithRetry, RateLimiter } from "./gemini-client";
 
-// Deterministic seed for reproducibility
+// Execution mode: "simulate" or "real"
+export type ExecutionMode = "simulate" | "real";
+let currentMode: ExecutionMode = "simulate";
+
+// Rate limiter for API calls
+let rateLimiter: RateLimiter | null = null;
+
+// Deterministic seed for reproducibility (simulation mode only)
 let seed = 42;
 
 /**
@@ -25,10 +33,29 @@ function seededRandom(): number {
 }
 
 /**
- * Set the seed for deterministic probe execution
+ * Set the seed for deterministic probe execution (simulation mode only)
  */
 export function setSeed(newSeed: number): void {
   seed = newSeed;
+}
+
+/**
+ * Set the execution mode (simulate or real)
+ */
+export function setMode(mode: ExecutionMode): void {
+  currentMode = mode;
+  
+  // Initialize rate limiter for real mode
+  if (mode === "real" && !rateLimiter) {
+    rateLimiter = new RateLimiter(5, 200); // Max 5 concurrent, 200ms between calls
+  }
+}
+
+/**
+ * Get current execution mode
+ */
+export function getMode(): ExecutionMode {
+  return currentMode;
 }
 
 /**
@@ -169,12 +196,27 @@ function generateTelemetry(
 
 /**
  * Run a single probe (prompt + config) and return result
+ * Supports both simulation and real API modes
  */
-export function runProbe(
+export async function runProbe(
   config: ProbeConfig,
   prompt: PromptRecord
-): ProbeResult {
-  const telemetry = generateTelemetry(config, prompt);
+): Promise<ProbeResult> {
+  let telemetry: TelemetryRecord;
+  
+  if (currentMode === "real") {
+    // Call real API with rate limiting
+    if (!rateLimiter) {
+      throw new Error("Rate limiter not initialized. Call setMode('real') first.");
+    }
+    
+    telemetry = await rateLimiter.execute(() =>
+      callGeminiWithRetry(config, prompt)
+    );
+  } else {
+    // Use simulated telemetry
+    telemetry = generateTelemetry(config, prompt);
+  }
   
   // Compute derived metrics
   const totalInputTokens = telemetry.prompt_tokens + telemetry.retrieved_tokens;
@@ -203,17 +245,26 @@ export function runProbe(
 
 /**
  * Run all probes (all configs × all prompts)
+ * Supports both simulation and real API modes
  */
-export function runAllProbes(
+export async function runAllProbes(
   configs: ProbeConfig[],
   prompts: PromptRecord[]
-): ProbeResult[] {
+): Promise<ProbeResult[]> {
   const results: ProbeResult[] = [];
+  
+  const total = configs.length * prompts.length;
+  let completed = 0;
   
   for (const config of configs) {
     for (const prompt of prompts) {
-      const result = runProbe(config, prompt);
+      const result = await runProbe(config, prompt);
       results.push(result);
+      
+      completed++;
+      if (currentMode === "real" && completed % 10 === 0) {
+        console.log(`   Progress: ${completed}/${total} probes completed`);
+      }
     }
   }
   
