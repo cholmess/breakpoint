@@ -91,6 +91,14 @@ export function ResultsSummary({
       );
     }
 
+    // Low sample / uncertain estimate (Problem 1 - Emil)
+    const lowSample = configAStats.low_sample_warning || configBStats.low_sample_warning;
+    if (lowSample) {
+      reasons.push(
+        "With fewer than 100 tests, low failure rates may not be statistically significant. Consider running more prompts for higher confidence."
+      );
+    }
+
     // Mention most common failure
     if (mostCommonFailure && mostCommonFailure.failure_mode) {
       const modeName = (mostCommonFailure.failure_mode as string)

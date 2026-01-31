@@ -35,6 +35,14 @@ const PROMPTS_PATH = "data/prompts/prompt-suite.json";
 
 export const maxDuration = 120;
 
+/** Log k/n/phat per config to verify Task 2 (failure rate calculation). */
+function logAnalysisKn(analysis: { configs: Record<string, { config_id: string; k: number; n: number; phat: number; low_sample_warning?: boolean }> }): void {
+  for (const [id, s] of Object.entries(analysis.configs)) {
+    const warn = s.low_sample_warning ? " [low_sample_warning]" : "";
+    console.log(`[run-simulation] Analysis ${id}: k=${s.k} n=${s.n} phat=${(s.phat * 100).toFixed(2)}%${warn}`);
+  }
+}
+
 /** Log per-result rule evaluation for debugging Problem 5 (all failure modes). */
 function logRuleEvaluationSummary(
   results: ProbeResult[],
@@ -189,6 +197,7 @@ export async function POST(req: NextRequest) {
     const configIds = configs.map(c => c.id);
     const trialsPerConfig = computeTrialsPerConfig(results);
     const analysis = runAnalysis(events, prompts, configIds, trialsPerConfig);
+    logAnalysisKn(analysis);
     const statsList = Object.values(analysis.configs);
     const comparisons = runComparisons(statsList);
     const distributions = runDistributions(events, prompts);

@@ -128,6 +128,9 @@ export function runAnalysis(
     stats.ci_bootstrap = bootstrapCI(stats.k, stats.n);
     stats.ci_bayesian = bayesianBetaCI(stats.k, stats.n);
     stats.ci_wilson = wilsonScoreCI(stats.k, stats.n); // deterministic; width varies with k,n
+    // Flag when failure rate is very low with small n, or n is very small (uncertain estimate)
+    stats.low_sample_warning =
+      (stats.n < 100 && stats.phat < 0.01) || stats.n < 30;
     configs[configId] = stats;
   }
 

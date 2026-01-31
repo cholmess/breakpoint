@@ -9,6 +9,8 @@ export interface ConfigStats {
   ci_bootstrap?: [number, number];
   ci_bayesian?: [number, number];
   ci_wilson?: [number, number]; // Wilson score 95% CI (deterministic, width varies with k,n)
+  /** True when n < 100 and phat < 1%, or n < 30; show low-sample / uncertain estimate note in UI. */
+  low_sample_warning?: boolean;
 }
 
 export interface AnalysisData {
