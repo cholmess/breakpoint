@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
   const [selectedPrompt, setSelectedPrompt] = useState("all");
+  const [runMode, setRunMode] = useState<"simulate" | "real">("simulate");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
   
   // Data from API
@@ -110,6 +111,7 @@ export default function Dashboard() {
           configB,
           promptFamily: selectedPrompt,
           seed: 42,
+          mode: runMode,
         }),
       });
       
@@ -173,6 +175,22 @@ export default function Dashboard() {
               onConfigAChange={setConfigA}
               onConfigBChange={setConfigB}
             />
+            {/* Run mode: simulate (default) or real API calls */}
+            <div className="rounded-lg border bg-card p-3">
+              <label className="text-sm font-medium mb-2 block">Run mode</label>
+              <select
+                value={runMode}
+                onChange={(e) => setRunMode(e.target.value as "simulate" | "real")}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                disabled={status === "running"}
+              >
+                <option value="simulate">Simulate (no API keys)</option>
+                <option value="real">Real (call LLM APIs)</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {runMode === "simulate" ? "Uses generated telemetry." : "Requires API keys in .env."}
+              </p>
+            </div>
             <PromptSelector
               selected={selectedPrompt}
               onSelect={setSelectedPrompt}
@@ -234,7 +252,7 @@ export default function Dashboard() {
                   comparisons={comparisonsData?.comparisons || []}
                   selectedConfigA={configA.id}
                   selectedConfigB={configB.id}
-                  isRunning={status === "running"}
+                  isRunning={false}
                 />
                 {analysisData && (
                   <ConfidenceBand analysisData={analysisData} />
