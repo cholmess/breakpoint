@@ -59,6 +59,10 @@ export async function callGeminiAPI(
       throw new Error("No usage metadata returned from API");
     }
     
+    // Count function calls from response
+    const candidates = (result as any).response?.candidates;
+    const functionCallCount = candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.length ?? 0;
+    
     // Map API response to our telemetry format
     const telemetry: TelemetryRecord = {
       prompt_id: prompt.id,
@@ -67,7 +71,7 @@ export async function callGeminiAPI(
       retrieved_tokens: usageMetadata.cachedContentTokenCount || 0,
       completion_tokens: usageMetadata.candidatesTokenCount || 0,
       latency_ms: latencyMs,
-      tool_calls: 0, // TODO: Track function calls when tools are enabled
+      tool_calls: functionCallCount,
       tool_timeouts: 0,
       timestamp: new Date().toISOString(),
     };

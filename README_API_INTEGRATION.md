@@ -159,7 +159,7 @@ If an API call fails:
 
 Real API calls will consume your Gemini quota. Before running:
 
-1. Check your prompt count: `jq length data/prompts/suite.json`
+1. Check your prompt count: `jq length data/prompts/prompt-suite.json`
 2. Check config count: `ls configs/*.json | wc -l`
 3. Total API calls = prompts × configs
 4. Estimate cost based on Gemini pricing

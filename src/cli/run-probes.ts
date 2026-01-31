@@ -126,7 +126,7 @@ async function main() {
     // Load configs and prompts
     console.log("📂 Loading configurations and prompts...");
     const configs = loadConfigs("configs");
-    const promptsFile = promptsPath || "data/prompts/suite.json";
+    const promptsFile = promptsPath || "data/prompts/prompt-suite.json";
     const prompts = loadPrompts(promptsFile);
     console.log(`   Loaded ${configs.length} config(s): ${configs.map((c) => c.id).join(", ")}`);
     console.log(`   Loaded ${prompts.length} prompt(s) from ${promptsFile}\n`);
@@ -216,7 +216,7 @@ async function main() {
   }
 }
 
-// Run if executed directly
-if (require.main === module) {
-  main();
-}
+// Run if executed directly (ESM pattern)
+// In ESM, we check if this file is the entry point
+// When run via tsx, this will be true when executed directly
+main();
