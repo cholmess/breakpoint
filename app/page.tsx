@@ -9,6 +9,8 @@ import { FailureBreakdown } from "@/components/failure-breakdown";
 import { PromptSelector } from "@/components/prompt-selector";
 import { ConfidenceBand } from "@/components/confidence-band";
 import { OrbTrail } from "@/components/orb-trail";
+import { ConfigPresets } from "@/components/config-presets";
+import { ResultsSummary } from "@/components/results-summary";
 import { Activity, Zap } from "lucide-react";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
@@ -49,6 +51,7 @@ export default function Dashboard() {
   const [distributionsData, setDistributionsData] = useState<DistributionsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
 
   // Fetch data from API routes
   useEffect(() => {
@@ -84,6 +87,21 @@ export default function Dashboard() {
   const runSimulation = useCallback(async () => {
     setStatus("running");
     setError(null);
+    setProgress(0);
+    
+    // Estimate progress based on typical probe count (200 prompts x 2 configs = 400 probes)
+    // Show estimated time: ~30 seconds for 400 probes
+    const estimatedProbes = 400;
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        // Simulate progress up to 90%, then wait for actual completion
+        if (prev < 90) {
+          return prev + 2; // Increment by 2% every ~600ms
+        }
+        return prev;
+      });
+    }, 600);
+    
     try {
       const response = await fetch("/api/run-simulation", {
         method: "POST",
@@ -95,6 +113,9 @@ export default function Dashboard() {
           seed: 42,
         }),
       });
+      
+      clearInterval(progressInterval);
+      setProgress(100);
 
       const data = await response.json();
 
@@ -107,6 +128,7 @@ export default function Dashboard() {
       setDistributionsData(data.distributions);
       setStatus("success");
     } catch (err) {
+      clearInterval(progressInterval);
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
@@ -125,7 +147,7 @@ export default function Dashboard() {
             </div>
             <div>
               <h1 className="text-sm font-bold tracking-tight neon-text-subtle">
-                Probabilistic Failure Simulator
+                BreakPoint
               </h1>
               <p className="text-[10px] text-muted-foreground">
                 AI Observability Dashboard
@@ -146,6 +168,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-4">
           {/* Left Column - Config & Controls */}
           <div className="col-span-4 space-y-4">
+            <ConfigPresets
+              onConfigAChange={setConfigA}
+              onConfigBChange={setConfigB}
+            />
             <FlipCard
               configA={configA}
               configB={configB}
@@ -171,12 +197,44 @@ export default function Dashboard() {
               <div className="text-center py-8 text-sm text-muted-foreground">
                 Loading analysis data...
               </div>
+            ) : status === "running" ? (
+              <div className="text-center py-8 space-y-4">
+                <div className="text-sm text-muted-foreground mb-4">
+                  Running simulation... (est. 30s for ~400 probes)
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-[#25924d] h-2 transition-all duration-300 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <div className="text-xs text-muted-foreground">{progress}%</div>
+              </div>
             ) : error ? (
-              <div className="text-center py-8 text-sm text-destructive">
-                {error}
+              <div className="text-center py-8 space-y-2">
+                <div className="text-sm font-medium text-destructive">{error}</div>
+                <div className="text-xs text-muted-foreground">
+                  Please check your configuration and try again.
+                </div>
+              </div>
+            ) : !comparisonsData || comparisonsData.comparisons.length === 0 ? (
+              <div className="text-center py-8 space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  No comparisons yet. Run a simulation to see results.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Configure Config A and Config B, select a prompt family, then click "Run Simulation".
+                </p>
               </div>
             ) : (
               <>
+                <ResultsSummary
+                  analysisData={analysisData}
+                  comparisonsData={comparisonsData}
+                  distributionsData={distributionsData}
+                  configA={configA}
+                  configB={configB}
+                />
                 <ProbabilityCard
                   comparisons={comparisonsData?.comparisons || []}
                   selectedConfigA={configA.id}

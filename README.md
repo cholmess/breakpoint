@@ -127,6 +127,47 @@ Reads `output/failure-events.json` (or `tests/fixtures/failure-events.json`) and
 
 **Person C (Frontend):** See **[docs/JSON_SCHEMAS.md](./docs/JSON_SCHEMAS.md)** for exact field names, types, and examples for dashboard, confidence bands, and distribution charts.
 
+## Person C: Frontend Dashboard
+
+The front-end dashboard provides a visual interface for viewing analysis results, comparing configurations, and exploring failure patterns.
+
+### Quick Setup
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Open in browser:**
+   Navigate to http://localhost:3000
+
+**See [SETUP.md](./SETUP.md) for detailed setup instructions and troubleshooting.**
+
+### Features
+
+- **Configuration Comparison**: Compare two LLM configurations side-by-side
+- **Probability Analysis**: View pairwise "safer than" probabilities
+- **Confidence Intervals**: Visualize failure rates with 95% confidence bands
+- **Distribution Charts**: Explore failure modes and prompt family distributions
+- **Failure Breakdown**: Detailed view of failure events by mode and severity
+
+### Data Flow
+
+The dashboard automatically loads data from:
+- `/api/analysis` → `output/analysis.json`
+- `/api/comparisons` → `output/comparisons.json`
+- `/api/distributions` → `output/distributions.json`
+
+To generate fresh data, run:
+```bash
+npm run analyze
+```
+
 ### Next Steps
 
 To make this useful for the hackathon:
