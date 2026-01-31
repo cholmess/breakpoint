@@ -308,6 +308,7 @@ function generateTelemetry(
 
   // Occasional non-tool failures so tools-disabled configs don't always show 0%
   const rollContext = seededRandom();
+  const rollContextOverflow = seededRandom();
   const rollCost = seededRandom();
 
   // Simulation mode: never artificially create latency breaches.
@@ -323,10 +324,21 @@ function generateTelemetry(
     )
   );
 
+  // ~5% chance: push total input tokens over context_window (context_overflow rule).
+  // Ensures simulation can trigger context_overflow, not only latency_breach.
+  const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
+  if (contextAtRisk && rollContextOverflow < 0.05) {
+    const overflowAmount = Math.floor(100 + seededRandom() * 500);
+    const minInputForOverflow = config.context_window + overflowAmount;
+    const currentInput = promptTokens + retrievedTokens;
+    if (minInputForOverflow > currentInput) {
+      retrievedTokens = Math.max(0, minInputForOverflow - promptTokens);
+    }
+  }
+
   // ~8% chance: push context usage over 0.85 (silent truncation rule).
   // Only apply when context_window is "at risk" (not huge). With huge context,
   // we skip this so configs with insane tokens actually see fewer context-related failures.
-  const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
   if (contextAtRisk && rollContext < 0.08) {
     const needed =
       Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
