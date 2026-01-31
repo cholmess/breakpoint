@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils'
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  // #region agent log
+  if (typeof fetch !== 'undefined') { fetch('http://127.0.0.1:7242/ingest/dd7b3873-0619-4a4c-9588-ce7e985afaba',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'select.tsx:Select',message:'Select Root render',data:{value:props.value},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{}); }
+  // #endregion
   return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 
@@ -56,6 +59,9 @@ function SelectContent({
   position = 'popper',
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  // #region agent log
+  if (typeof fetch !== 'undefined') { fetch('http://127.0.0.1:7242/ingest/dd7b3873-0619-4a4c-9588-ce7e985afaba',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'select.tsx:SelectContent',message:'SelectContent render',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{}); }
+  // #endregion
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -103,6 +109,9 @@ function SelectItem({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  // #region agent log
+  if (typeof fetch !== 'undefined') { fetch('http://127.0.0.1:7242/ingest/dd7b3873-0619-4a4c-9588-ce7e985afaba',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'select.tsx:SelectItem',message:'SelectItem render',data:{value:props.value,disabled:props.disabled},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H3,H5'})}).catch(()=>{}); }
+  // #endregion
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
