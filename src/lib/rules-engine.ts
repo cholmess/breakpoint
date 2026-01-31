@@ -224,7 +224,9 @@ export function getEnhancedRules(configs: Map<string, ProbeConfig>): Rule[] {
       condition: (result: ProbeResult) => {
         const config = configs.get(result.config_id);
         if (!config) return false;
-        return config.top_k > RETRIEVAL_NOISE_THRESHOLD;
+        // Only flag when retrieval actually occurred (high top_k + retrieved tokens used)
+        const usedRetrieval = result.telemetry.retrieved_tokens > 0;
+        return usedRetrieval && config.top_k > RETRIEVAL_NOISE_THRESHOLD;
       },
       severity: "MED",
       mode: "retrieval_noise_risk",
