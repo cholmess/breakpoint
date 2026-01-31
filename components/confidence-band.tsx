@@ -67,15 +67,15 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-card border border-border rounded-md p-2 shadow-lg">
-          <p className="text-xs font-semibold mb-1">Config {data.config}</p>
-          <p className="text-[10px] text-muted-foreground">
+        <div className="bg-card border border-border rounded-md p-3 shadow-lg">
+          <p className="text-base font-semibold mb-2 leading-relaxed">Config {data.config}</p>
+          <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
             Failure Rate: <span className="font-mono font-semibold text-foreground">{data.phat.toFixed(2)}%</span>
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
             CI: <span className="font-mono text-foreground">{data.lower.toFixed(2)}% - {data.upper.toFixed(2)}%</span>
           </p>
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             Events: <span className="font-mono text-foreground">{data.k}/{data.n}</span>
           </p>
         </div>
@@ -87,7 +87,7 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
   return (
     <Card className="py-3">
       <CardHeader className="py-2 px-4">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <CardTitle className="text-lg font-bold uppercase tracking-wider neon-text-subtle leading-tight">
           Failure Rate with Confidence Intervals
         </CardTitle>
       </CardHeader>
@@ -105,19 +105,19 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
               />
               <XAxis
                 dataKey="config"
-                tick={{ fontSize: 9 }}
+                tick={{ fontSize: 12 }}
                 stroke="var(--muted-foreground)"
               />
               <YAxis
-                tick={{ fontSize: 9 }}
+                tick={{ fontSize: 12 }}
                 stroke="var(--muted-foreground)"
-                width={35}
+                width={45}
                 domain={yDomain}
                 label={{
                   value: "Failure Rate (%)",
                   angle: -90,
                   position: "insideLeft",
-                  style: { fontSize: "9px", textAnchor: "middle" },
+                  style: { fontSize: "12px", textAnchor: "middle" },
                 }}
               />
               <Tooltip content={<CustomTooltip />} />

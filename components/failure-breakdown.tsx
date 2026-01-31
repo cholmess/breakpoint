@@ -74,7 +74,7 @@ export function FailureBreakdown({
           </p>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <div className="text-xs text-muted-foreground text-center py-4">
+          <div className="text-base text-muted-foreground text-center py-4 leading-relaxed">
             No failure events detected
           </div>
         </CardContent>
@@ -85,7 +85,7 @@ export function FailureBreakdown({
   return (
     <Card className="py-3 glass-card">
       <CardHeader className="py-2 px-4">
-        <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <CardTitle className="text-lg font-bold uppercase tracking-wider neon-text-subtle leading-tight">
           Failure Mode Breakdown
         </CardTitle>
       </CardHeader>
@@ -112,12 +112,12 @@ export function FailureBreakdown({
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium">
+                  <span className="text-base font-medium leading-relaxed">
                     {formatFailureMode(item.mode)}
                   </span>
                   <span
                     className={cn(
-                      "text-[9px] font-mono uppercase px-1.5 py-0.5 rounded",
+                      "text-sm font-mono uppercase px-2 py-1 rounded leading-relaxed",
                       item.severity === "high" &&
                         "bg-destructive/10 text-destructive",
                       item.severity === "medium" &&
@@ -126,11 +126,11 @@ export function FailureBreakdown({
                   >
                     {item.severity}
                   </span>
-                  <span className="text-[9px] text-muted-foreground ml-auto">
+                  <span className="text-sm text-white ml-auto leading-relaxed">
                     {item.count} event{item.count !== 1 ? "s" : ""} ({(item.proportion * 100).toFixed(1)}%)
                   </span>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                <p className="text-base text-muted-foreground mt-2 leading-relaxed">
                   {getFailureModeDescription(item.mode, item.count, item.proportion)}
                 </p>
               </div>

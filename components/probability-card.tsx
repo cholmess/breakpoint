@@ -59,8 +59,8 @@ export function ProbabilityCard({
       )}
     >
       <CardContent className="p-6">
-        <div className="text-center mb-4">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+        <div className="text-center mb-6">
+          <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
             Which Configuration is Safer?
           </div>
           <div
@@ -79,7 +79,7 @@ export function ProbabilityCard({
           {!isIndeterminate && (
             <div
               className={cn(
-                "mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium",
+                "mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium leading-relaxed",
                 isSafe
                   ? "bg-[#25924d]/10 text-[#25924d]"
                   : "bg-destructive/10 text-destructive"
@@ -87,14 +87,14 @@ export function ProbabilityCard({
             >
               <span
                 className={cn(
-                  "h-1.5 w-1.5 rounded-full",
+                  "h-2 w-2 rounded-full",
                   isSafe ? "bg-[#25924d]" : "bg-destructive"
                 )}
               />
               {isSafe ? "Safer Choice" : "Higher Risk"}
             </div>
           )}
-          <div className="mt-4 text-xs text-muted-foreground leading-relaxed max-w-sm mx-auto px-2">
+          <div className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto px-2">
             {isIndeterminate
               ? "Both configurations show similar reliability. Consider other factors like cost or speed."
               : isSafe
@@ -106,7 +106,7 @@ export function ProbabilityCard({
         {/* Show all comparisons if there are multiple */}
         {comparisons.length > 1 && (
           <div className="mt-6 pt-4 border-t border-border">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-3">
+            <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
               All Comparisons
             </div>
             <div className="space-y-2 max-h-32 overflow-y-auto">
@@ -121,12 +121,12 @@ export function ProbabilityCard({
                   <div
                     key={idx}
                     className={cn(
-                      "flex items-center justify-between text-xs p-2 rounded",
+                      "flex items-center justify-between text-sm p-2 rounded leading-relaxed",
                       isCurrent && "bg-primary/10 border border-primary/20",
                       !isCurrent && "bg-muted/30"
                     )}
                   >
-                    <span className="font-mono text-[10px]">
+                    <span className="font-mono text-sm">
                       {comp.config_a} vs {comp.config_b}
                     </span>
                     <span
