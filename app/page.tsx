@@ -52,6 +52,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  
+  // Store the configs that were actually used in the last simulation
+  const [simulatedConfigA, setSimulatedConfigA] = useState<Config | null>(null);
+  const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
 
   // Fetch data from API routes
   useEffect(() => {
@@ -127,6 +131,9 @@ export default function Dashboard() {
       setAnalysisData(data.analysis);
       setComparisonsData(data.comparisons);
       setDistributionsData(data.distributions);
+      // Store the configs that were actually used in this simulation
+      setSimulatedConfigA(data.configA || configA);
+      setSimulatedConfigB(data.configB || configB);
       setStatus("success");
     } catch (err) {
       clearInterval(progressInterval);
@@ -245,13 +252,13 @@ export default function Dashboard() {
                   analysisData={analysisData}
                   comparisonsData={comparisonsData}
                   distributionsData={distributionsData}
-                  configA={configA}
-                  configB={configB}
+                  configA={simulatedConfigA || configA}
+                  configB={simulatedConfigB || configB}
                 />
                 <ProbabilityCard
                   comparisons={comparisonsData?.comparisons || []}
-                  selectedConfigA={configA.id}
-                  selectedConfigB={configB.id}
+                  selectedConfigA={(simulatedConfigA || configA).id}
+                  selectedConfigB={(simulatedConfigB || configB).id}
                   isRunning={false}
                 />
                 {analysisData && (

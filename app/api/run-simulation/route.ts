@@ -132,6 +132,8 @@ export async function POST(req: NextRequest) {
       comparisons,
       distributions,
       timeline,
+      configA: configA,  // Return the actual configs used in simulation
+      configB: configB,
     });
   } catch (err) {
     console.error("Run simulation error:", err);
