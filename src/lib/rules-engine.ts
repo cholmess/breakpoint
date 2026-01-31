@@ -9,6 +9,7 @@ import type {
   FailureEvent,
   FailureMode,
   Severity,
+  ProbeConfig,
 } from "../types";
 
 // Default thresholds for rules
@@ -131,7 +132,7 @@ export function getDefaultRules(): Rule[] {
  * Enhanced rules that can access config directly
  * This version is more accurate as it can check actual config values
  */
-export function getEnhancedRules(configs: Map<string, any>): Rule[] {
+export function getEnhancedRules(configs: Map<string, ProbeConfig>): Rule[] {
   return [
     {
       id: "rule_context_overflow",

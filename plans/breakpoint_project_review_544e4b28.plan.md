@@ -4,10 +4,10 @@ overview: A comprehensive review of the breakpoint project identifying incompati
 todos:
   - id: a1-add-openai-dep
     content: "[Person A] Add openai package to dependencies in package.json"
-    status: pending
+    status: completed
   - id: a2-fix-type-safety
     content: "[Person A] Change getEnhancedRules signature from Map<string, any> to Map<string, ProbeConfig>"
-    status: pending
+    status: completed
   - id: a3-fix-gemini-tools
     content: "[Person A] Implement tool call tracking in gemini-client.ts (currently hardcoded to 0)"
     status: pending
@@ -31,7 +31,7 @@ todos:
     status: pending
   - id: s1-fix-module-system
     content: "[Shared/A] Resolve module system mismatch between package.json (commonjs) and tsconfig (ESNext)"
-    status: pending
+    status: completed
   - id: s2-configure-npm-test
     content: "[Shared/B] Update package.json test script to run actual tests"
     status: pending

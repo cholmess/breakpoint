@@ -340,10 +340,10 @@ async function main(): Promise<void> {
   }
 }
 
-// Run if executed directly
-if (require.main === module) {
-  main().catch((error) => {
-    console.error("Fatal error:", error);
-    process.exit(1);
-  });
-}
+// Run if executed directly (ESM pattern)
+// In ESM, we check if this file is the entry point
+// When run via tsx, this will be true when executed directly
+main().catch((error) => {
+  console.error("Fatal error:", error);
+  process.exit(1);
+});
