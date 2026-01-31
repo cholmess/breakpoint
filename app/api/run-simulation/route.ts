@@ -20,7 +20,7 @@ import {
   setSeed,
   filterPromptsByFamily,
 } from "@/src/lib/probe-runner";
-import { getEnhancedRules, evaluateAllRules } from "@/src/lib/rules-engine";
+import { getAdaptiveRules, evaluateAllRules } from "@/src/lib/rules-engine";
 import { buildBreakFirstTimeline } from "@/src/lib/timeline";
 import {
   runAnalysis,
@@ -189,7 +189,8 @@ export async function POST(req: NextRequest) {
     const configMap = new Map<string, ProbeConfig>(
       configs.map((c) => [c.id, c])
     );
-    const rules = getEnhancedRules(configMap);
+    // Use adaptive rules with dynamic P95 thresholds for latency and cost
+    const rules = getAdaptiveRules(configMap, results);
     const events = evaluateAllRules(results, rules);
     logRuleEvaluationSummary(results, events);
     const timeline = buildBreakFirstTimeline(events);

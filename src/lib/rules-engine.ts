@@ -12,10 +12,48 @@ import type {
   ProbeConfig,
 } from "../types";
 
-// Default thresholds for rules
+// Default thresholds for rules (used when adaptive thresholds aren't available)
 const LATENCY_SLO_MS = 15000; // 15 seconds - realistic for real LLM APIs (GPT-4, RAG, tools)
 const COST_THRESHOLD_DAILY = 100; // $100 per day (assuming ~1000 probes/day)
+const COST_THRESHOLD_PER_PROBE = COST_THRESHOLD_DAILY / 1000; // $0.10 per probe
 const RETRIEVAL_NOISE_THRESHOLD = 8; // top_k > 8 considered noisy
+
+/**
+ * Compute percentile from sorted array
+ */
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  const index = Math.ceil(sorted.length * p) - 1;
+  return sorted[Math.max(0, Math.min(index, sorted.length - 1))];
+}
+
+/**
+ * Compute dynamic thresholds from probe results (percentile-based)
+ * Returns P95 for latency and cost to flag the worst 5% as failures
+ */
+export function computeDynamicThresholds(results: ProbeResult[]): {
+  latency_p95: number;
+  cost_p95: number;
+  context_usage_p95: number;
+} {
+  if (results.length === 0) {
+    return {
+      latency_p95: LATENCY_SLO_MS,
+      cost_p95: COST_THRESHOLD_PER_PROBE,
+      context_usage_p95: 0.85,
+    };
+  }
+
+  const latencies = results.map((r) => r.telemetry.latency_ms).sort((a, b) => a - b);
+  const costs = results.map((r) => r.estimated_cost).sort((a, b) => a - b);
+  const contextUsages = results.map((r) => r.context_usage).sort((a, b) => a - b);
+
+  return {
+    latency_p95: percentile(latencies, 0.95),
+    cost_p95: percentile(costs, 0.95),
+    context_usage_p95: percentile(contextUsages, 0.95),
+  };
+}
 
 /**
  * Get default rules for failure detection
@@ -122,6 +160,136 @@ export function getDefaultRules(): Rule[] {
         return {
           retrieval_ratio: retrievalRatio,
           retrieved_tokens: result.telemetry.retrieved_tokens,
+        };
+      },
+    },
+  ];
+}
+
+/**
+ * Adaptive rules with dynamic thresholds based on run distribution (Option B)
+ * Uses percentile-based thresholds: latency P95, cost P95
+ * Flags the worst 5% as failures, adapting to actual traffic patterns
+ */
+export function getAdaptiveRules(
+  configs: Map<string, ProbeConfig>,
+  results: ProbeResult[]
+): Rule[] {
+  const thresholds = computeDynamicThresholds(results);
+  
+  // Use P95 as threshold, or fallback to defaults if P95 is too low
+  const latencyThreshold = Math.max(thresholds.latency_p95, 5000); // Min 5s to avoid flagging fast calls
+  const costThreshold = Math.max(thresholds.cost_p95, 0.01); // Min $0.01
+  const contextUsageThreshold = Math.max(thresholds.context_usage_p95, 0.85);
+
+  return [
+    {
+      id: "rule_context_overflow",
+      name: "Context Overflow",
+      condition: (result: ProbeResult) => {
+        const config = configs.get(result.config_id);
+        if (!config) return false;
+        const totalInputTokens =
+          result.telemetry.prompt_tokens + result.telemetry.retrieved_tokens;
+        return totalInputTokens > config.context_window;
+      },
+      severity: "HIGH",
+      mode: "context_overflow",
+      breaksAt: (result: ProbeResult) => {
+        const config = configs.get(result.config_id);
+        const totalInputTokens =
+          result.telemetry.prompt_tokens + result.telemetry.retrieved_tokens;
+        return `tokens_in > context_window (${totalInputTokens} > ${config?.context_window || "?"})`;
+      },
+      getSignal: (result: ProbeResult) => {
+        const config = configs.get(result.config_id);
+        const totalInputTokens =
+          result.telemetry.prompt_tokens + result.telemetry.retrieved_tokens;
+        return {
+          tokens_in: totalInputTokens,
+          context_window: config?.context_window || 0,
+        };
+      },
+    },
+    {
+      id: "rule_silent_truncation",
+      name: "Silent Truncation Risk",
+      condition: (result: ProbeResult) => result.context_usage > contextUsageThreshold,
+      severity: "MED",
+      mode: "silent_truncation_risk",
+      breaksAt: (result: ProbeResult) =>
+        `context_usage > ${(contextUsageThreshold * 100).toFixed(1)}% (current: ${(result.context_usage * 100).toFixed(1)}%)`,
+      getSignal: (result: ProbeResult) => ({
+        context_usage: result.context_usage,
+        threshold: contextUsageThreshold,
+      }),
+    },
+    {
+      id: "rule_latency_breach",
+      name: "Latency Breach",
+      condition: (result: ProbeResult) =>
+        result.telemetry.latency_ms > latencyThreshold,
+      severity: (result: ProbeResult) =>
+        result.telemetry.latency_ms > latencyThreshold * 2 ? "HIGH" : "MED",
+      mode: "latency_breach",
+      breaksAt: (result: ProbeResult) =>
+        `latency_ms > P95 (${result.telemetry.latency_ms}ms > ${latencyThreshold.toFixed(0)}ms)`,
+      getSignal: (result: ProbeResult) => ({
+        latency_ms: result.telemetry.latency_ms,
+        p95_threshold: latencyThreshold,
+      }),
+    },
+    {
+      id: "rule_cost_runaway",
+      name: "Cost Runaway",
+      condition: (result: ProbeResult) =>
+        result.estimated_cost > costThreshold,
+      severity: "HIGH",
+      mode: "cost_runaway",
+      breaksAt: (result: ProbeResult) =>
+        `estimated_cost > P95 (current: $${result.estimated_cost.toFixed(4)} > $${costThreshold.toFixed(4)})`,
+      getSignal: (result: ProbeResult) => ({
+        cost: result.estimated_cost,
+        p95_threshold: costThreshold,
+      }),
+    },
+    {
+      id: "rule_tool_timeout",
+      name: "Tool Timeout Risk",
+      condition: (result: ProbeResult) =>
+        result.telemetry.tool_calls > 0 &&
+        result.telemetry.tool_timeouts > 0,
+      severity: "HIGH",
+      mode: "tool_timeout_risk",
+      breaksAt: (result: ProbeResult) =>
+        `tool_calls > 0 && timeouts > 0 (calls: ${result.telemetry.tool_calls}, timeouts: ${result.telemetry.tool_timeouts})`,
+      getSignal: (result: ProbeResult) => ({
+        tool_calls: result.telemetry.tool_calls,
+        tool_timeouts: result.telemetry.tool_timeouts,
+        timeout_rate:
+          result.telemetry.tool_timeouts / result.telemetry.tool_calls,
+      }),
+    },
+    {
+      id: "rule_retrieval_noise",
+      name: "Retrieval Noise Risk",
+      condition: (result: ProbeResult) => {
+        const config = configs.get(result.config_id);
+        if (!config) return false;
+        const usedRetrieval = result.telemetry.retrieved_tokens > 0;
+        return usedRetrieval && config.top_k > RETRIEVAL_NOISE_THRESHOLD;
+      },
+      severity: "MED",
+      mode: "retrieval_noise_risk",
+      breaksAt: (result: ProbeResult) => {
+        const config = configs.get(result.config_id);
+        return `top_k > ${RETRIEVAL_NOISE_THRESHOLD} (current: ${config?.top_k || "?"})`;
+      },
+      getSignal: (result: ProbeResult) => {
+        const config = configs.get(result.config_id);
+        return {
+          top_k: config?.top_k || 0,
+          chunk_size: config?.chunk_size || 0,
         };
       },
     },

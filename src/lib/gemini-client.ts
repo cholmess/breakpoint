@@ -63,16 +63,25 @@ export async function callGeminiAPI(
     const candidates = (result as any).response?.candidates;
     const functionCallCount = candidates?.[0]?.content?.parts?.filter((p: any) => p.functionCall)?.length ?? 0;
     
+    // Estimate retrieved tokens for RAG scenarios (cachedContentTokenCount is caching, not RAG)
+    const retrievedTokens = 
+      (prompt.expects_citations || prompt.family?.includes("doc_grounded"))
+        ? Math.floor(config.top_k * config.chunk_size * 0.8)
+        : usageMetadata.cachedContentTokenCount || 0;
+    
+    // Infer tool timeouts from high latency (>10s) when tools are used
+    const toolTimeouts = (functionCallCount > 0 && latencyMs > 10000) ? 1 : 0;
+    
     // Map API response to our telemetry format
     const telemetry: TelemetryRecord = {
       prompt_id: prompt.id,
       config_id: config.id,
       prompt_tokens: usageMetadata.promptTokenCount || 0,
-      retrieved_tokens: usageMetadata.cachedContentTokenCount || 0,
+      retrieved_tokens: retrievedTokens,
       completion_tokens: usageMetadata.candidatesTokenCount || 0,
       latency_ms: latencyMs,
       tool_calls: functionCallCount,
-      tool_timeouts: 0,
+      tool_timeouts: toolTimeouts,
       timestamp: new Date().toISOString(),
     };
     
