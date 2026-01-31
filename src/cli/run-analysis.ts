@@ -109,6 +109,7 @@ function main(): void {
   }
 }
 
-if (require.main === module) {
-  main();
-}
+// Run if executed directly (ESM pattern)
+// In ESM, we check if this file is the entry point
+// When run via tsx, this will be true when executed directly
+main();
