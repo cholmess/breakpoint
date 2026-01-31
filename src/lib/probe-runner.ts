@@ -225,33 +225,35 @@ const CONTEXT_USAGE_BREACH = 0.85;
 const CONTEXT_AT_RISK_MAX = 256 * 1024; // 256k tokens
 
 /**
- * Get model-specific latency parameters for more realistic simulation
+ * Get model-specific latency parameters for realistic simulation.
+ * Token multiplier is kept small (ms per token) so typical requests stay under 3000ms.
+ * Input processing is fast; output tokens dominate but we use a blended conservative estimate.
  */
 function getModelLatencyProfile(model: string): { baseMin: number; baseMax: number; tokenMultiplier: number } {
   const modelLower = model.toLowerCase();
   
   // GPT-4 family: slower, more thorough
   if (modelLower.includes("gpt-4") && !modelLower.includes("turbo") && !modelLower.includes("mini")) {
-    return { baseMin: 800, baseMax: 1500, tokenMultiplier: 0.8 };
+    return { baseMin: 400, baseMax: 900, tokenMultiplier: 0.06 };
   }
   // GPT-4 Turbo / GPT-4o: faster than base GPT-4
   if (modelLower.includes("gpt-4-turbo") || modelLower.includes("gpt-4o")) {
-    return { baseMin: 400, baseMax: 900, tokenMultiplier: 0.5 };
+    return { baseMin: 250, baseMax: 600, tokenMultiplier: 0.04 };
   }
   // GPT-3.5 / mini models: fast
   if (modelLower.includes("gpt-3.5") || modelLower.includes("mini")) {
-    return { baseMin: 200, baseMax: 500, tokenMultiplier: 0.3 };
+    return { baseMin: 150, baseMax: 400, tokenMultiplier: 0.03 };
   }
   // Gemini family: generally fast
   if (modelLower.includes("gemini")) {
-    return { baseMin: 300, baseMax: 700, tokenMultiplier: 0.4 };
+    return { baseMin: 200, baseMax: 550, tokenMultiplier: 0.04 };
   }
   // Manus: async, slower
   if (modelLower.includes("manus")) {
-    return { baseMin: 1000, baseMax: 2500, tokenMultiplier: 1.0 };
+    return { baseMin: 500, baseMax: 1200, tokenMultiplier: 0.08 };
   }
   // Default: moderate speed
-  return { baseMin: 400, baseMax: 800, tokenMultiplier: 0.5 };
+  return { baseMin: 300, baseMax: 650, tokenMultiplier: 0.05 };
 }
 
 /**
@@ -305,25 +307,21 @@ function generateTelemetry(
   completionTokens = Math.min(completionTokens, config.max_output_tokens);
 
   // Occasional non-tool failures so tools-disabled configs don't always show 0%
-  const rollLatency = seededRandom();
   const rollContext = seededRandom();
   const rollCost = seededRandom();
 
-  // ~10% chance: latency breach (rule: latency_ms > 3000)
-  let latencyMs: number;
-  if (rollLatency < 0.10) {
-    latencyMs = Math.floor(
-      LATENCY_BREACH_MS + 200 + seededRandom() * 2500
-    );
-  } else {
-    // Use model-specific base latency for realism
-    const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
-    const tokenLatency =
-      (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
-    latencyMs = Math.floor(
-      baseLatency + tokenLatency + seededRandom() * 500
-    );
-  }
+  // Simulation mode: never artificially create latency breaches.
+  // Synthetic latency is not meaningful; avoid misleading "Latency Breach" dominance.
+  // Formula keeps all requests under 3000ms so context/truncation/cost failures can surface.
+  const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
+  const tokenLatency =
+    (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
+  const latencyMs = Math.floor(
+    Math.min(
+      baseLatency + tokenLatency + seededRandom() * 400,
+      LATENCY_BREACH_MS - 200 // Cap below 3000ms
+    )
+  );
 
   // ~8% chance: push context usage over 0.85 (silent truncation rule).
   // Only apply when context_window is "at risk" (not huge). With huge context,
