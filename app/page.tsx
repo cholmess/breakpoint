@@ -81,28 +81,37 @@ export default function Dashboard() {
     fetchData();
   }, []);
 
-  const runSimulation = useCallback(() => {
+  const runSimulation = useCallback(async () => {
     setStatus("running");
-    // Note: In a real implementation, this would trigger the probe runner
-    // For now, we'll just refresh the data after a delay
-    setTimeout(async () => {
-      try {
-        const [analysis, comparisons, distributions] = await Promise.all([
-          fetch('/api/analysis').then(r => r.json()),
-          fetch('/api/comparisons').then(r => r.json()),
-          fetch('/api/distributions').then(r => r.json()),
-        ]);
-        
-        setAnalysisData(analysis);
-        setComparisonsData(comparisons);
-        setDistributionsData(distributions);
-        setStatus("success");
-      } catch (err) {
-        console.error('Failed to refresh data:', err);
-        setStatus("failure");
+    setError(null);
+    try {
+      const response = await fetch("/api/run-simulation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          configA,
+          configB,
+          promptFamily: selectedPrompt,
+          seed: 42,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Simulation failed");
       }
-    }, 2000);
-  }, []);
+
+      setAnalysisData(data.analysis);
+      setComparisonsData(data.comparisons);
+      setDistributionsData(data.distributions);
+      setStatus("success");
+    } catch (err) {
+      console.error("Simulation failed:", err);
+      setError(err instanceof Error ? err.message : "Simulation failed");
+      setStatus("failure");
+    }
+  }, [configA, configB, selectedPrompt]);
 
   return (
     <div className="min-h-screen gradient-mesh">
