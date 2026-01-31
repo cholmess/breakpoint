@@ -12,6 +12,7 @@ import { ResultsSummary } from "@/components/results-summary";
 import { Activity, Zap, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 // Default configs matching the schema
@@ -227,7 +228,7 @@ export default function Dashboard() {
           </div>
 
           {/* Middle Column - Traffic Light & Probability */}
-          <div className="col-span-1 flex flex-col items-center pt-4">
+          <div className="col-span-1 flex flex-col items-center pt-4 sticky top-24 self-start">
             <TrafficLight status={status} />
           </div>
 
