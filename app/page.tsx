@@ -284,7 +284,7 @@ export default function Dashboard() {
                     comparisons={comparisonsData?.comparisons || []}
                     selectedConfigA={(simulatedConfigA || configA).id}
                     selectedConfigB={(simulatedConfigB || configB).id}
-                    isRunning={status === "running"}
+                    isRunning={false}
                   />
                   {analysisData && (
                     <ConfidenceBand analysisData={analysisData} />
