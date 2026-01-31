@@ -2,7 +2,7 @@
 
 Person B’s analysis pipeline writes three JSON files to `output/`. Use these schemas to load and render the dashboard, failure-rate bands, and safer-than comparisons.
 
-**How to generate:** From repo root, run `npm run analyze`. Inputs: `output/failure-events.json` (or `tests/fixtures/failure-events.json`) and `data/prompts/prompt-suite.json` (or `data/prompts/suite.json`).
+**How to generate:** From repo root, run `npm run analyze`. Inputs: `output/failure-events.json` (or `tests/fixtures/failure-events.json`) and `data/prompts/prompt-suite.json`.
 
 **Output location:** `output/analysis.json`, `output/comparisons.json`, `output/distributions.json`
 

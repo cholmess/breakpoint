@@ -126,7 +126,7 @@ async function main() {
     // Load configs and prompts
     console.log("📂 Loading configurations and prompts...");
     const configs = loadConfigs("configs");
-    const promptsFile = promptsPath || "data/prompts/suite.json";
+    const promptsFile = promptsPath || "data/prompts/prompt-suite.json";
     const prompts = loadPrompts(promptsFile);
     console.log(`   Loaded ${configs.length} config(s): ${configs.map((c) => c.id).join(", ")}`);
     console.log(`   Loaded ${prompts.length} prompt(s) from ${promptsFile}\n`);

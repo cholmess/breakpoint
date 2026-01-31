@@ -19,10 +19,7 @@ const FAILURE_EVENTS_PATHS = [
   path.join(process.cwd(), "output", "failure-events.json"),
   path.join(process.cwd(), "tests", "fixtures", "failure-events.json"),
 ];
-const PROMPTS_PATHS_REL = [
-  "data/prompts/prompt-suite.json",
-  "data/prompts/suite.json",
-];
+const PROMPTS_PATH_REL = "data/prompts/prompt-suite.json";
 
 function ensureOutputDir(): void {
   if (!fs.existsSync(OUTPUT_DIR)) {
@@ -52,13 +49,11 @@ function loadFailureEvents(): FailureEvent[] {
 }
 
 function loadPromptsForAnalysis(): ReturnType<typeof loadPrompts> {
-  for (const p of PROMPTS_PATHS_REL) {
-    const fullPath = path.join(process.cwd(), p);
-    if (fs.existsSync(fullPath)) {
-      const prompts = loadPrompts(p);
-      console.log(`   Loaded ${prompts.length} prompt(s) from ${p}`);
-      return prompts;
-    }
+  const fullPath = path.join(process.cwd(), PROMPTS_PATH_REL);
+  if (fs.existsSync(fullPath)) {
+    const prompts = loadPrompts(PROMPTS_PATH_REL);
+    console.log(`   Loaded ${prompts.length} prompt(s) from ${PROMPTS_PATH_REL}`);
+    return prompts;
   }
   console.warn("   No prompt suite found; using empty prompts (n=0 per config, family=unknown for distributions).");
   return [];

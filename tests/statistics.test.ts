@@ -98,6 +98,13 @@ function testBootstrapCI(): void {
 
   const [loKgtN, hiKgtN] = bootstrapCI(15, 10);
   assert.ok(loKgtN >= 0 && hiKgtN <= 1 && loKgtN <= hiKgtN, "k>n clamped");
+
+  // Custom alpha: 90% CI (alpha=0.1) should be narrower than 95% CI (alpha=0.05)
+  const [lo95, hi95] = bootstrapCI(5, 100);
+  const [lo90, hi90] = bootstrapCI(5, 100, 0.1);
+  assert.ok(hi90 - lo90 <= hi95 - lo95 + 1e-10, "90% CI should be narrower than or equal to 95% CI");
+  assert.ok(lo90 >= 0 && hi90 <= 1 && lo90 <= hi90, "90% CI bounds valid");
+
   console.log("  bootstrapCI: ok");
 }
 
@@ -121,6 +128,13 @@ function testBayesianBetaCI(): void {
 
   const [loKgtN, hiKgtN] = bayesianBetaCI(12, 10);
   assert.ok(loKgtN >= 0 && hiKgtN <= 1 && loKgtN <= hiKgtN, "k>n clamped");
+
+  // Custom alpha: 90% CI (alpha=0.1) should be narrower than 95% CI (alpha=0.05)
+  const [lo95, hi95] = bayesianBetaCI(5, 100);
+  const [lo90, hi90] = bayesianBetaCI(5, 100, 0.1);
+  assert.ok(hi90 - lo90 <= hi95 - lo95 + 1e-10, "90% CI should be narrower than or equal to 95% CI");
+  assert.ok(lo90 >= 0 && hi90 <= 1 && lo90 <= hi90, "90% CI bounds valid");
+
   console.log("  bayesianBetaCI: ok");
 }
 
