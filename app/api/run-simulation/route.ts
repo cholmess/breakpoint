@@ -33,7 +33,7 @@ import type { ProbeConfig, PromptRecord } from "@/src/types";
 
 const PROMPTS_PATH = "data/prompts/prompt-suite.json";
 
-export const maxDuration = 300; // Allow up to 300s (5 minutes) for probes - simulate mode is fast (~20s), real mode with concurrent processing takes ~3-4min
+export const maxDuration = 120; // Allow up to 120s (2 minutes) for probes - simulate mode is fast (~20s), real mode optimized to <1min
 
 export async function POST(req: NextRequest) {
   try {
