@@ -8,6 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Config } from "@/types/dashboard";
 
+const TOKEN_STEP = 512;
+
+/** Round to nearest multiple of 512, minimum 512 (E3: token values divisible by 512). */
+function roundToTokenStep(value: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < TOKEN_STEP) return TOKEN_STEP;
+  return Math.round(n / TOKEN_STEP) * TOKEN_STEP;
+}
+
 interface ConfigFormProps {
   config: Config;
   onChange: (config: Config) => void;
@@ -110,10 +119,20 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
             type="number"
             value={config.context_window}
             onChange={(e) =>
-              onChange({ ...config, context_window: Number(e.target.value) })
+              onChange({
+                ...config,
+                context_window: roundToTokenStep(Number(e.target.value)),
+              })
             }
+            onBlur={(e) => {
+              const v = roundToTokenStep(Number(e.target.value));
+              if (v !== config.context_window)
+                onChange({ ...config, context_window: v });
+            }}
             className="h-7 text-xs flex-1"
             placeholder="tokens"
+            min={TOKEN_STEP}
+            step={TOKEN_STEP}
           />
         </div>
 
@@ -123,9 +142,18 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
             type="number"
             value={config.chunk_size}
             onChange={(e) =>
-              onChange({ ...config, chunk_size: Number(e.target.value) })
+              onChange({
+                ...config,
+                chunk_size: roundToTokenStep(Number(e.target.value)),
+              })
             }
+            onBlur={(e) => {
+              const v = roundToTokenStep(Number(e.target.value));
+              if (v !== config.chunk_size) onChange({ ...config, chunk_size: v });
+            }}
             className="h-7 text-xs flex-1"
+            min={TOKEN_STEP}
+            step={TOKEN_STEP}
           />
         </div>
 
@@ -135,9 +163,19 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
             type="number"
             value={config.max_output_tokens}
             onChange={(e) =>
-              onChange({ ...config, max_output_tokens: Number(e.target.value) })
+              onChange({
+                ...config,
+                max_output_tokens: roundToTokenStep(Number(e.target.value)),
+              })
             }
+            onBlur={(e) => {
+              const v = roundToTokenStep(Number(e.target.value));
+              if (v !== config.max_output_tokens)
+                onChange({ ...config, max_output_tokens: v });
+            }}
             className="h-7 text-xs flex-1"
+            min={TOKEN_STEP}
+            step={TOKEN_STEP}
           />
         </div>
 
