@@ -13,10 +13,10 @@ todos:
     status: completed
   - id: a4-fix-provider-fallback
     content: "[Person A] Handle unknown model names in llm-client.ts (throw error instead of defaulting to gemini)"
-    status: pending
+    status: completed
   - id: a5-deprecate-default-rules
     content: "[Person A] Add @deprecated JSDoc to getDefaultRules() or remove if unused"
-    status: pending
+    status: completed
   - id: a6-add-tests-person-a
     content: "[Person A] Add unit tests for rules-engine.ts, probe-runner.ts, timeline.ts, telemetry-logger.ts"
     status: completed

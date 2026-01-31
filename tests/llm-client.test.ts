@@ -113,42 +113,52 @@ function testCaseInsensitivity(): void {
   console.log("✓ inferProvider is case insensitive");
 }
 
-// --- Test: Default Provider (Unknown Model) ---
+// --- Test: Unknown Model Throws (No Silent Default) ---
 
-function testDefaultProvider(): void {
+function testUnknownModelThrows(): void {
   const unknownModel = createMockConfig({ model: "unknown-model-123" });
-  assert.strictEqual(inferProvider(unknownModel), "gemini", "Should default to gemini for unknown models");
+  assert.throws(
+    () => inferProvider(unknownModel),
+    /Unknown model provider/,
+    "Should throw for unknown model"
+  );
   
   const emptyModel = createMockConfig({ model: "" });
-  assert.strictEqual(inferProvider(emptyModel), "gemini", "Should default to gemini for empty model");
+  assert.throws(
+    () => inferProvider(emptyModel),
+    /Unknown model provider/,
+    "Should throw for empty model"
+  );
   
   const undefinedModel = createMockConfig({ model: undefined });
-  assert.strictEqual(inferProvider(undefinedModel), "gemini", "Should default to gemini for undefined model");
+  assert.throws(
+    () => inferProvider(undefinedModel),
+    /Unknown model provider/,
+    "Should throw for undefined model"
+  );
   
-  console.log("✓ inferProvider defaults to gemini for unknown models");
+  console.log("✓ inferProvider throws for unknown models (no silent default)");
 }
 
 // --- Test: Edge Cases ---
 
 function testEdgeCases(): void {
-  // Model name contains but doesn't start with prefix
+  // Model name contains but doesn't start with prefix -> unknown, should throw
   const containsGPT = createMockConfig({ model: "my-gpt-4-model" });
-  assert.strictEqual(inferProvider(containsGPT), "gemini", "Should not match if 'gpt-' not at start");
+  assert.throws(() => inferProvider(containsGPT), /Unknown model provider/, "Should throw if 'gpt-' not at start");
   
-  // Similar prefixes
-  const gpt = createMockConfig({ model: "gpt" }); // No dash
-  assert.strictEqual(inferProvider(gpt), "gemini", "Should not match 'gpt' without dash");
+  // Similar prefixes (no dash) -> unknown, should throw
+  const gpt = createMockConfig({ model: "gpt" });
+  assert.throws(() => inferProvider(gpt), /Unknown model provider/, "Should throw for 'gpt' without dash");
   
-  const gemini = createMockConfig({ model: "gemini" }); // No dash
-  assert.strictEqual(inferProvider(gemini), "gemini", "Should not match 'gemini' without dash");
+  const gemini = createMockConfig({ model: "gemini" });
+  assert.throws(() => inferProvider(gemini), /Unknown model provider/, "Should throw for 'gemini' without dash");
   
-  // Whitespace
+  // Whitespace -> doesn't match gpt- prefix, should throw
   const whitespace = createMockConfig({ model: "  gpt-4o  " });
-  // Note: Current implementation doesn't trim, so this won't match
-  // If trimming is desired, update the implementation
-  assert.strictEqual(inferProvider(whitespace), "gemini", "Whitespace should not match (no trim)");
+  assert.throws(() => inferProvider(whitespace), /Unknown model provider/, "Whitespace should not match (no trim)");
   
-  console.log("✓ inferProvider handles edge cases correctly");
+  console.log("✓ inferProvider handles edge cases correctly (throws for unknown)");
 }
 
 // --- Test: Provider Type Values ---
@@ -172,7 +182,6 @@ function testMultipleConfigScenarios(): void {
     { config: createMockConfig({ id: "b", model: "gemini-1.5-flash" }), expected: "gemini" as ProviderType },
     { config: createMockConfig({ id: "c", model: "manus-v1" }), expected: "manus" as ProviderType },
     { config: createMockConfig({ id: "d", model: "o1-mini" }), expected: "openai" as ProviderType },
-    { config: createMockConfig({ id: "e", model: "unknown" }), expected: "gemini" as ProviderType },
   ];
   
   for (const { config, expected } of configs) {
@@ -183,6 +192,10 @@ function testMultipleConfigScenarios(): void {
       `Config ${config.id} with model ${config.model} should infer ${expected}`
     );
   }
+  
+  // Unknown model should throw
+  const unknownConfig = createMockConfig({ id: "e", model: "unknown" });
+  assert.throws(() => inferProvider(unknownConfig), /Unknown model provider/, "Unknown model should throw");
   
   console.log("✓ inferProvider handles multiple config scenarios correctly");
 }
@@ -220,7 +233,7 @@ function runAllTests(): void {
     testGeminiModels();
     testManusModels();
     testCaseInsensitivity();
-    testDefaultProvider();
+    testUnknownModelThrows();
     testEdgeCases();
     testProviderTypeValues();
     testMultipleConfigScenarios();
