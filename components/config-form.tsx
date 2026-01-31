@@ -36,9 +36,6 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
       .catch(() => setModelOptions([]));
   }, []);
 
-  // #region agent log
-  if (typeof fetch !== 'undefined') { fetch('http://127.0.0.1:7242/ingest/dd7b3873-0619-4a4c-9588-ce7e985afaba',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'config-form.tsx',message:'ConfigForm render',data:{modelOptionsLength:modelOptions.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{}); }
-  // #endregion
   return (
     <div className="space-y-4">
       <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">

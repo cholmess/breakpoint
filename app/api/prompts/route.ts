@@ -25,7 +25,11 @@ export async function GET() {
       }, { status: 200 });
     }
 
-    const fileContents = fs.readFileSync(filePath, 'utf-8');
+    let fileContents = fs.readFileSync(filePath, 'utf-8');
+    // Strip BOM if present
+    if (fileContents.charCodeAt(0) === 0xFEFF) {
+      fileContents = fileContents.slice(1);
+    }
     const data = JSON.parse(fileContents);
 
     // Extract unique prompt families

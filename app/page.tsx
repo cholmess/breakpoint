@@ -9,7 +9,6 @@ import { FailureBreakdown } from "@/components/failure-breakdown";
 import { PromptSelector } from "@/components/prompt-selector";
 import { ConfidenceBand } from "@/components/confidence-band";
 import { OrbTrail } from "@/components/orb-trail";
-import { ConfigPresets } from "@/components/config-presets";
 import { ResultsSummary } from "@/components/results-summary";
 import { Activity, Zap } from "lucide-react";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
@@ -42,7 +41,7 @@ const defaultConfigB: Config = {
 export default function Dashboard() {
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
-  const [selectedPrompt, setSelectedPrompt] = useState("long-context");
+  const [selectedPrompt, setSelectedPrompt] = useState("all");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
   
   // Data from API
@@ -168,10 +167,6 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-4">
           {/* Left Column - Config & Controls */}
           <div className="col-span-4 space-y-4">
-            <ConfigPresets
-              onConfigAChange={setConfigA}
-              onConfigBChange={setConfigB}
-            />
             <FlipCard
               configA={configA}
               configB={configB}

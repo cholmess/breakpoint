@@ -78,24 +78,28 @@ export function modeDistributions(
 
 /**
  * Run full analysis: per-config stats with bootstrap and Bayesian CIs.
- * Edge case: empty events → returns { configs: {} }; empty prompts → totalTrials=0, n per config = max(0,k).
+ * Creates stats for all provided configIds, even if they have 0 failures.
+ * Edge case: empty events → all configs get k=0; empty prompts → totalTrials=0, n per config = max(0,k).
  */
 export function runAnalysis(
   events: FailureEvent[],
-  prompts: PromptRecord[]
+  prompts: PromptRecord[],
+  allConfigIds?: string[]
 ): AnalysisOutput {
-  if (!events || events.length === 0) {
+  // Use provided config IDs or infer from events
+  const configIds = allConfigIds && allConfigIds.length > 0
+    ? new Set(allConfigIds)
+    : new Set<string>(events?.map(e => e.config_id) || []);
+  
+  if (configIds.size === 0) {
     return { configs: {} };
   }
-  const configIds = new Set<string>();
-  for (const e of events) {
-    configIds.add(e.config_id);
-  }
+
   const totalTrials = Array.isArray(prompts) ? prompts.length : 0;
   const configs: Record<string, Stats> = {};
 
   for (const configId of configIds) {
-    const stats = estimatePhat(events, configId, totalTrials);
+    const stats = estimatePhat(events || [], configId, totalTrials);
     stats.ci_bootstrap = bootstrapCI(stats.k, stats.n);
     stats.ci_bayesian = bayesianBetaCI(stats.k, stats.n);
     configs[configId] = stats;
