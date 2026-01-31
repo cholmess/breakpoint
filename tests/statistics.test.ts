@@ -74,6 +74,22 @@ function testEstimatePhat(): void {
 
   const allFail = estimatePhat(events, "A", 3);
   assert.ok(allFail.k <= 3);
+
+  // E1: config with no events still gets k=0, n=totalTrials, phat=0
+  const noFailuresConfig = estimatePhat([], "config-no-failures", 100);
+  assert.strictEqual(noFailuresConfig.k, 0);
+  assert.strictEqual(noFailuresConfig.n, 100);
+  assert.strictEqual(noFailuresConfig.phat, 0);
+
+  // E1: k is clamped to n so phat never exceeds 1 (guards against bad data)
+  const badDataEvents: FailureEvent[] = [
+    { prompt_id: "p1", config_id: "C", failure_mode: "latency_breach", severity: "MED", breaks_at: "", signal: {}, timestamp: "" },
+    { prompt_id: "p2", config_id: "C", failure_mode: "latency_breach", severity: "MED", breaks_at: "", signal: {}, timestamp: "" },
+  ];
+  const statsN2 = estimatePhat(badDataEvents, "C", 2);
+  assert.ok(statsN2.k <= statsN2.n);
+  assert.ok(statsN2.phat >= 0 && statsN2.phat <= 1);
+
   console.log("  estimatePhat: ok");
 }
 
@@ -211,6 +227,17 @@ function testIntegration(): void {
 
   const emptyAnalysis = runAnalysis([], prompts);
   assert.deepStrictEqual(emptyAnalysis.configs, {});
+
+  // E1: when allConfigIds is passed, configs with 0 failures are included
+  const analysisWithZeroFailureConfigs = runAnalysis(events, prompts, ["A", "B", "config-zero-failures"]);
+  assert.ok("A" in analysisWithZeroFailureConfigs.configs);
+  assert.ok("B" in analysisWithZeroFailureConfigs.configs);
+  assert.ok("config-zero-failures" in analysisWithZeroFailureConfigs.configs);
+  const zeroFailStats = analysisWithZeroFailureConfigs.configs["config-zero-failures"];
+  assert.strictEqual(zeroFailStats.k, 0);
+  assert.strictEqual(zeroFailStats.n, prompts.length);
+  assert.strictEqual(zeroFailStats.phat, 0);
+
   const emptyDist = runDistributions([], prompts);
   assert.deepStrictEqual(emptyDist.by_failure_mode, {});
   assert.deepStrictEqual(emptyDist.by_prompt_family, {});

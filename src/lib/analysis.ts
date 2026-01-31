@@ -78,19 +78,27 @@ export function modeDistributions(
 
 /**
  * Run full analysis: per-config stats with bootstrap and Bayesian CIs.
- * Creates stats for all provided configIds, even if they have 0 failures.
- * Edge case: empty events → all configs get k=0; empty prompts → totalTrials=0, n per config = max(0,k).
+ *
+ * When the caller knows the full set of configs that were run (e.g. run-simulation with
+ * configA and configB), they MUST pass allConfigIds. Otherwise configs with zero failures
+ * will be omitted (we only infer config IDs from events, so configs with no events
+ * never appear). Passing allConfigIds ensures "0% error rate" is shown correctly for
+ * configs that had no failures rather than omitting them.
+ *
+ * totalTrials is set from prompts.length; it must match the number of probes run per
+ * config (e.g. the filtered prompt list used in the run). Edge case: empty events →
+ * all configs get k=0; empty prompts → totalTrials=0, n per config = max(0,k).
  */
 export function runAnalysis(
   events: FailureEvent[],
   prompts: PromptRecord[],
   allConfigIds?: string[]
 ): AnalysisOutput {
-  // Use provided config IDs or infer from events
+  // Prefer explicit config set so configs with 0 failures are included
   const configIds = allConfigIds && allConfigIds.length > 0
     ? new Set(allConfigIds)
     : new Set<string>(events?.map(e => e.config_id) || []);
-  
+
   if (configIds.size === 0) {
     return { configs: {} };
   }

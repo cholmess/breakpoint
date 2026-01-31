@@ -215,55 +215,101 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+// Thresholds aligned with rules-engine so simulation can trigger failures
+const LATENCY_BREACH_MS = 3000;
+const COST_BREACH_PER_PROBE = 0.10;
+const CONTEXT_USAGE_BREACH = 0.85;
+
 /**
- * Generate realistic telemetry based on config and prompt
- * This simulates what would happen if we actually called an LLM API
+ * Generate realistic telemetry based on config and prompt.
+ * Simulates multiple failure modes so failure rate varies by config (not just 0% or 5%).
  */
 function generateTelemetry(
   config: ProbeConfig,
   prompt: PromptRecord
 ): TelemetryRecord {
   const promptTokens = estimateTokens(prompt.prompt);
-  
-  // Simulate retrieved tokens (for RAG scenarios)
+
+  // Simulate retrieved tokens (for RAG scenarios) – match suite family names
   let retrievedTokens = 0;
-  if (prompt.family === "doc_grounded" || prompt.family === "long_context") {
-    // Simulate retrieval based on chunk_size and top_k
+  const hasRetrieval =
+    prompt.family.includes("doc_grounded") || prompt.family === "long_context";
+  if (hasRetrieval) {
     const chunksRetrieved = Math.min(config.top_k, 10);
     retrievedTokens = chunksRetrieved * config.chunk_size;
-    // Add some randomness (±20%)
     retrievedTokens = Math.floor(
       retrievedTokens * (0.8 + seededRandom() * 0.4)
     );
   }
-  
+
   // Simulate completion tokens based on prompt complexity
-  let completionTokens = Math.floor(promptTokens * (0.3 + seededRandom() * 0.4));
-  if (prompt.family === "short") {
+  let completionTokens = Math.floor(
+    promptTokens * (0.3 + seededRandom() * 0.4)
+  );
+  if (prompt.family.startsWith("short")) {
     completionTokens = Math.floor(completionTokens * 0.5);
-  } else if (prompt.family === "long_context") {
+  } else if (
+    prompt.family.includes("long") ||
+    prompt.family === "long_context"
+  ) {
     completionTokens = Math.floor(completionTokens * 1.5);
   }
-  
-  // Cap completion tokens by max_output_tokens
   completionTokens = Math.min(completionTokens, config.max_output_tokens);
-  
-  // Simulate latency (base latency + token-dependent latency)
-  const baseLatency = 200 + seededRandom() * 300; // 200-500ms base
-  const tokenLatency = (promptTokens + retrievedTokens + completionTokens) * 0.5; // ~0.5ms per token
-  const latencyMs = Math.floor(baseLatency + tokenLatency + seededRandom() * 500);
-  
-  // Simulate tool calls
+
+  // Occasional non-tool failures so tools-disabled configs don't always show 0%
+  const rollLatency = seededRandom();
+  const rollContext = seededRandom();
+  const rollCost = seededRandom();
+
+  // ~10% chance: latency breach (rule: latency_ms > 3000)
+  let latencyMs: number;
+  if (rollLatency < 0.10) {
+    latencyMs = Math.floor(
+      LATENCY_BREACH_MS + 200 + seededRandom() * 2500
+    );
+  } else {
+    const baseLatency = 200 + seededRandom() * 300;
+    const tokenLatency =
+      (promptTokens + retrievedTokens + completionTokens) * 0.5;
+    latencyMs = Math.floor(
+      baseLatency + tokenLatency + seededRandom() * 500
+    );
+  }
+
+  // ~8% chance: push context usage over 0.85 (silent truncation rule)
+  if (rollContext < 0.08) {
+    const needed =
+      Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
+      promptTokens;
+    if (needed > 0) {
+      retrievedTokens = Math.max(retrievedTokens, needed);
+    }
+  }
+
+  // ~5% chance: cost runaway (rule: estimated_cost > 0.10 per probe)
+  const totalSoFar = promptTokens + retrievedTokens + completionTokens;
+  const minTokensForCostBreach = Math.ceil(
+    (COST_BREACH_PER_PROBE * 1000) / config.cost_per_1k_tokens
+  );
+  if (rollCost < 0.05 && minTokensForCostBreach > totalSoFar) {
+    const extra = minTokensForCostBreach - totalSoFar + 100;
+    completionTokens = Math.min(
+      completionTokens + extra,
+      config.max_output_tokens
+    );
+  }
+
+  // Simulate tool calls and timeouts – vary probability (5–18%) so not always same count
   let toolCalls = 0;
   let toolTimeouts = 0;
   if (config.tools_enabled && prompt.expects_tools) {
-    toolCalls = Math.floor(1 + seededRandom() * 5); // 1-5 tool calls
-    // 10% chance of timeout if tools are used
-    if (seededRandom() < 0.1) {
+    toolCalls = Math.floor(1 + seededRandom() * 5);
+    const timeoutChance = 0.05 + seededRandom() * 0.13; // 5–18% per probe
+    if (seededRandom() < timeoutChance) {
       toolTimeouts = Math.floor(1 + seededRandom() * 2);
     }
   }
-  
+
   return {
     prompt_id: prompt.id,
     config_id: config.id,
