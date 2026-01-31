@@ -72,11 +72,65 @@ Sample configurations are in `configs/`:
 
 ### Prompt Suite
 
-50 synthetic prompts across 4 families:
-- `short`: Quick Q&A prompts
-- `long_context`: Legal, research, document analysis
-- `tool_heavy`: Data analysis and automation tasks
-- `doc_grounded`: Q&A with context requirements
+The system supports two ways to generate prompts:
+
+1. **Template-based prompts** (existing): 50 synthetic prompts across 4 families:
+   - `short`: Quick Q&A prompts
+   - `long_context`: Legal, research, document analysis
+   - `tool_heavy`: Data analysis and automation tasks
+   - `doc_grounded`: Q&A with context requirements
+
+2. **AI-generated domain prompts** (new): Generate 50-200 realistic prompts for your specific use case using OpenAI.
+
+#### Generating Domain-Specific Prompts
+
+Use the CLI tool to generate prompts tailored to your domain:
+
+```bash
+# Basic usage
+npm run generate-prompts -- \
+  --use-case "customer support chatbot" \
+  --count 100
+
+# With telemetry estimation
+npm run generate-prompts -- \
+  --use-case "legal document analysis" \
+  --count 150 \
+  --telemetry estimate \
+  --config configs/config-a.json
+
+# Advanced options
+npm run generate-prompts -- \
+  --use-case "code review assistant" \
+  --count 75 \
+  --complexity complex \
+  --short-ratio 0.3 \
+  --tool-ratio 0.4 \
+  --output data/prompts/code-review.json
+```
+
+**Options:**
+- `--use-case, -u`: Description of your use case (required)
+- `--count, -c`: Number of prompts to generate (1-200, required)
+- `--output, -o`: Output file path (default: `data/prompts/<use-case>.json`)
+- `--telemetry, -t`: Telemetry mode: `estimate` (LLM-based), `validate` (real API), or `none` (default)
+- `--complexity`: `simple`, `moderate` (default), or `complex`
+- `--short-ratio`: Ratio of short prompts (0-1, default 0.4)
+- `--tool-ratio`: Ratio of tool-heavy prompts (0-1, default 0.3)
+- `--doc-ratio`: Ratio of doc-grounded prompts (0-1, default 0.4)
+- `--config`: Config file for telemetry estimation (required if using `--telemetry`)
+- `--validation-sample-size`: Number of prompts to validate with real API (default: 10)
+
+**API Routes** (for frontend integration):
+
+- `POST /api/generate-prompts`: Generate domain-specific prompts
+- `POST /api/estimate-telemetry`: Estimate telemetry for prompts
+
+See the generated prompts in `data/prompts/` - they can be used directly with the probe runner:
+
+```bash
+npm run probes -- --prompts data/prompts/customer-support.json
+```
 
 ### Command Line Options
 
@@ -90,8 +144,11 @@ npm run probes -- --mode real
 # Custom seed for simulation
 npm run probes -- --seed 123
 
+# Use custom prompts file (e.g., domain-generated prompts)
+npm run probes -- --prompts data/prompts/customer-support.json
+
 # Combine options
-npm run probes -- --mode simulate --seed 42
+npm run probes -- --mode simulate --seed 42 --prompts data/prompts/my-prompts.json
 ```
 
 ### Modes

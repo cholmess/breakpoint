@@ -51,10 +51,11 @@ function writeOutput(filename: string, data: any): void {
 /**
  * Parse command line arguments
  */
-function parseArgs(): { mode: ExecutionMode; seed: number } {
+function parseArgs(): { mode: ExecutionMode; seed: number; promptsPath?: string } {
   const args = process.argv.slice(2);
   let mode: ExecutionMode = "simulate";
   let seed = 42;
+  let promptsPath: string | undefined;
   
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--mode" && i + 1 < args.length) {
@@ -70,6 +71,8 @@ function parseArgs(): { mode: ExecutionMode; seed: number } {
         console.error(`Invalid seed: ${args[i + 1]}. Must be a number`);
         process.exit(1);
       }
+    } else if ((args[i] === "--prompts" || args[i] === "-p") && i + 1 < args.length) {
+      promptsPath = args[i + 1];
     }
   }
   
@@ -88,7 +91,7 @@ function parseArgs(): { mode: ExecutionMode; seed: number } {
     }
   }
   
-  return { mode, seed };
+  return { mode, seed, promptsPath };
 }
 
 /**
@@ -99,7 +102,7 @@ async function main() {
 
   try {
     // Parse arguments
-    const { mode, seed } = parseArgs();
+    const { mode, seed, promptsPath } = parseArgs();
     
     // Set execution mode
     setMode(mode);
@@ -123,9 +126,10 @@ async function main() {
     // Load configs and prompts
     console.log("📂 Loading configurations and prompts...");
     const configs = loadConfigs("configs");
-    const prompts = loadPrompts("data/prompts/suite.json");
+    const promptsFile = promptsPath || "data/prompts/suite.json";
+    const prompts = loadPrompts(promptsFile);
     console.log(`   Loaded ${configs.length} config(s): ${configs.map((c) => c.id).join(", ")}`);
-    console.log(`   Loaded ${prompts.length} prompt(s)\n`);
+    console.log(`   Loaded ${prompts.length} prompt(s) from ${promptsFile}\n`);
 
     // Validate API keys for real mode
     if (mode === "real") {
