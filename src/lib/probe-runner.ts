@@ -216,7 +216,7 @@ function estimateTokens(text: string): number {
 }
 
 // Thresholds aligned with rules-engine so simulation can trigger failures
-const LATENCY_BREACH_MS = 3000;
+const LATENCY_BREACH_MS = 15000; // 15s - realistic for real LLM APIs (GPT-4, tools, RAG)
 const COST_BREACH_PER_PROBE = 0.10;
 const CONTEXT_USAGE_BREACH = 0.85;
 
@@ -226,7 +226,7 @@ const CONTEXT_AT_RISK_MAX = 256 * 1024; // 256k tokens
 
 /**
  * Get model-specific latency parameters for realistic simulation.
- * Token multiplier is kept small (ms per token) so typical requests stay under 3000ms.
+ * Token multiplier is kept small (ms per token) so typical simulated requests stay under 2800ms.
  * Input processing is fast; output tokens dominate but we use a blended conservative estimate.
  */
 function getModelLatencyProfile(model: string): { baseMin: number; baseMax: number; tokenMultiplier: number } {
@@ -312,14 +312,14 @@ function generateTelemetry(
 
   // Simulation mode: never artificially create latency breaches.
   // Synthetic latency is not meaningful; avoid misleading "Latency Breach" dominance.
-  // Formula keeps all requests under 3000ms so context/truncation/cost failures can surface.
+  // Formula keeps all requests under 2800ms so context/truncation/cost failures can surface.
   const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
   const tokenLatency =
     (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
   const latencyMs = Math.floor(
     Math.min(
       baseLatency + tokenLatency + seededRandom() * 400,
-      LATENCY_BREACH_MS - 200 // Cap below 3000ms
+      2800 // Cap at 2800ms - well below the 15s real-API threshold
     )
   );
 

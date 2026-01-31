@@ -13,7 +13,7 @@ import type {
 } from "../types";
 
 // Default thresholds for rules
-const LATENCY_SLO_MS = 3000; // 3 seconds
+const LATENCY_SLO_MS = 15000; // 15 seconds - realistic for real LLM APIs (GPT-4, RAG, tools)
 const COST_THRESHOLD_DAILY = 100; // $100 per day (assuming ~1000 probes/day)
 const RETRIEVAL_NOISE_THRESHOLD = 8; // top_k > 8 considered noisy
 
