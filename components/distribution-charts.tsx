@@ -9,7 +9,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   CartesianGrid,
   Cell,
 } from "recharts";
@@ -190,12 +189,6 @@ export function DistributionCharts({
                     }}
                     cursor={{ fill: 'transparent' }}
                   />
-                  <Legend
-                    wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-                    iconSize={8}
-                    verticalAlign="top"
-                    height={20}
-                  />
                   <Bar 
                     dataKey="count" 
                     name="Count" 
@@ -298,12 +291,6 @@ export function DistributionCharts({
                       return [Math.round(value ?? 0), name ?? ""];
                     }}
                     cursor={{ fill: 'transparent' }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-                    iconSize={8}
-                    verticalAlign="top"
-                    height={20}
                   />
                   <Bar
                     dataKey="count"
