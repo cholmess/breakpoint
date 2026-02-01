@@ -38,6 +38,12 @@ export interface DistributionEntry {
   proportion: number;
 }
 
+export interface HotspotEntry {
+  failure_mode: string;
+  family: string;
+  count: number;
+}
+
 export interface DistributionsData {
   by_failure_mode: {
     [key: string]: DistributionEntry & { failure_mode: string };
@@ -45,6 +51,7 @@ export interface DistributionsData {
   by_prompt_family: {
     [key: string]: DistributionEntry & { family: string };
   };
+  hotspot_matrix?: HotspotEntry[];
 }
 
 // Config file structure

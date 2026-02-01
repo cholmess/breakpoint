@@ -7,6 +7,7 @@ import { ProbabilityCard } from "@/components/probability-card";
 import { DistributionCharts } from "@/components/distribution-charts";
 import { FailureBreakdown } from "@/components/failure-breakdown";
 import { ConfidenceBand } from "@/components/confidence-band";
+import { FailureHotspotMatrix } from "@/components/failure-hotspot-matrix";
 import dynamic from "next/dynamic";
 
 const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ default: mod.OrbTrail })), {
@@ -107,7 +108,7 @@ export default function Dashboard() {
     // Set initial empty state immediately so page renders
     setAnalysisData({ configs: {} });
     setComparisonsData({ comparisons: [] });
-    setDistributionsData({ by_failure_mode: {}, by_prompt_family: {} });
+    setDistributionsData({ by_failure_mode: {}, by_prompt_family: {}, hotspot_matrix: [] });
     setLoading(false);
     
     // Fetch data in background with timeout
@@ -511,6 +512,11 @@ export default function Dashboard() {
                 
                 <FailureBreakdown 
                   byFailureMode={distributionsData?.by_failure_mode || {}}
+                />
+                
+                {/* Failure Hotspot Matrix */}
+                <FailureHotspotMatrix 
+                  hotspotMatrix={distributionsData?.hotspot_matrix || []}
                 />
               </div>
             )}
