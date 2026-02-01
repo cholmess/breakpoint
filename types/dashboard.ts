@@ -76,4 +76,19 @@ export type FailureMode =
   | 'tool_timeout_risk'
   | 'retrieval_noise_risk';
 
+// Break-first timeline (from run-simulation API)
+export interface BreakPoint {
+  config_id: string;
+  prompt_id: string;
+  failure_mode: string;
+  severity: string;
+  timestamp: string;
+  breaks_at?: string;
+}
+
+export interface Timeline {
+  configs: Record<string, BreakPoint[]>;
+  break_points: BreakPoint[];
+}
+
 

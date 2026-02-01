@@ -15,13 +15,14 @@ const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ d
 });
 import { ResultsSummary } from "@/components/results-summary";
 import { RecommendationBanner } from "@/components/recommendation-banner";
+import { BreakFirstTimeline } from "@/components/break-first-timeline";
 import { Activity, Zap, Play, HelpCircle, Download, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { exportReportAsPdf } from "@/lib/export-report";
-import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
+import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline } from "@/types/dashboard";
 
 // Default configs matching the schema
 const defaultConfigA: Config = {
@@ -59,6 +60,7 @@ export default function Dashboard() {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [comparisonsData, setComparisonsData] = useState<ComparisonsData | null>(null);
   const [distributionsData, setDistributionsData] = useState<DistributionsData | null>(null);
+  const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -246,6 +248,7 @@ export default function Dashboard() {
       setAnalysisData(data.analysis);
       setComparisonsData(data.comparisons);
       setDistributionsData(data.distributions);
+      setTimeline(data.timeline ?? null);
       // Store the configs that were actually used in this simulation
       setSimulatedConfigA(data.configA || configA);
       setSimulatedConfigB(data.configB || configB);
@@ -503,6 +506,13 @@ export default function Dashboard() {
                     <ConfidenceBand analysisData={analysisData} />
                   )}
                 </div>
+
+                {/* Break-first timeline */}
+                <BreakFirstTimeline
+                  timeline={timeline}
+                  configAId={(simulatedConfigA || configA).id}
+                  configBId={(simulatedConfigB || configB).id}
+                />
                 
                 {/* Row 3: Failure Mode Distribution */}
                 <DistributionCharts
