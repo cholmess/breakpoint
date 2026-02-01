@@ -522,64 +522,89 @@ export async function runProbe(
 export type ProgressCallback = (completed: number, total: number) => void;
 
 /**
+ * Callback invoked when a single probe completes (for streaming / live log).
+ * May return a Promise so the stream can delay between events for readable line-by-line progress.
+ */
+export type ProbeCompleteCallback = (completed: number, total: number, result: ProbeResult) => void | Promise<void>;
+
+/** When streaming in simulate mode, run one probe at a time so the UI can show 1/40, 2/40, ... line by line. */
+const SIMULATE_STREAM_BATCH_SIZE = 1;
+
+/**
  * Run all probes (all configs × all prompts)
  * Supports both simulation and real API modes
  * Optional progress callback for real-time feedback
- * 
+ * Optional onProbeComplete for streaming (per-probe in simulate so progress is readable)
+ *
  * In real mode, probes run concurrently (rate limiter controls max 5 concurrent)
- * In simulate mode, runs all probes in parallel for maximum speed
+ * In simulate mode, runs all probes in parallel for maximum speed unless onProbeComplete is set (then one-by-one for readable stream)
  */
 export async function runAllProbes(
   configs: ProbeConfig[],
   prompts: PromptRecord[],
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  onProbeComplete?: ProbeCompleteCallback
 ): Promise<ProbeResult[]> {
   const total = configs.length * prompts.length;
   let completed = 0;
-  
-  // In simulate mode, run all probes in parallel for better performance
-  if (currentMode === "simulate") {
-    // Guaranteed demo mix (Problem 5): assign one probe per failure mode so all 6 appear
-    const forcedByKey = new Map<string, FailureMode>();
-    const tasks: { config: ProbeConfig; prompt: PromptRecord; configIdx: number; promptIdx: number }[] = [];
-    for (let ci = 0; ci < configs.length; ci++) {
-      for (let pi = 0; pi < prompts.length; pi++) {
-        tasks.push({ config: configs[ci], prompt: prompts[pi], configIdx: ci, promptIdx: pi });
-      }
-    }
-    const assigned = new Set<number>();
-    for (const mode of ALL_FAILURE_MODES) {
-      for (let i = 0; i < tasks.length; i++) {
-        if (assigned.has(i)) continue;
-        const { config, prompt } = tasks[i];
-        const canSupport =
-          mode === "tool_timeout_risk"
-            ? config.tools_enabled && prompt.expects_tools
-            : mode === "retrieval_noise_risk"
-              ? config.top_k > 8
-              : true;
-        if (canSupport) {
-          const key = `${config.id}:${prompt.id}`;
-          forcedByKey.set(key, mode);
-          assigned.add(i);
-          break;
-        }
-      }
-    }
 
-    const allProbePromises: Promise<ProbeResult>[] = [];
-    for (const config of configs) {
-      for (const prompt of prompts) {
+  // Guaranteed demo mix (Problem 5): assign one probe per failure mode so all 6 appear
+  const forcedByKey = new Map<string, FailureMode>();
+  const tasks: { config: ProbeConfig; prompt: PromptRecord }[] = [];
+  for (const config of configs) {
+    for (const prompt of prompts) {
+      tasks.push({ config, prompt });
+    }
+  }
+  const assigned = new Set<number>();
+  for (const mode of ALL_FAILURE_MODES) {
+    for (let i = 0; i < tasks.length; i++) {
+      if (assigned.has(i)) continue;
+      const { config, prompt } = tasks[i];
+      const canSupport =
+        mode === "tool_timeout_risk"
+          ? config.tools_enabled && prompt.expects_tools
+          : mode === "retrieval_noise_risk"
+            ? config.top_k > 8
+            : true;
+      if (canSupport) {
         const key = `${config.id}:${prompt.id}`;
-        const forced = forcedByKey.get(key);
-        allProbePromises.push(runProbe(config, prompt, forced));
+        forcedByKey.set(key, mode);
+        assigned.add(i);
+        break;
       }
     }
-    
-    const probeResults = await Promise.all(allProbePromises);
-    if (onProgress) {
-      onProgress(total, total);
+  }
+
+  // In simulate mode with onProbeComplete: run one probe at a time and await callback so stream can pace events (line-by-line progress)
+  if (currentMode === "simulate" && onProbeComplete) {
+    const results: ProbeResult[] = [];
+    for (let i = 0; i < tasks.length; i += SIMULATE_STREAM_BATCH_SIZE) {
+      const batch = tasks.slice(i, i + SIMULATE_STREAM_BATCH_SIZE);
+      const batchPromises = batch.map(({ config, prompt }) => {
+        const key = `${config.id}:${prompt.id}`;
+        return runProbe(config, prompt, forcedByKey.get(key));
+      });
+      const batchResults = await Promise.all(batchPromises);
+      for (const result of batchResults) {
+        completed++;
+        await Promise.resolve(onProbeComplete(completed, total, result));
+        if (onProgress) onProgress(completed, total);
+      }
+      results.push(...batchResults);
     }
+    return results;
+  }
+
+  // In simulate mode without onProbeComplete: run all in parallel for speed
+  if (currentMode === "simulate") {
+    const allProbePromises: Promise<ProbeResult>[] = [];
+    for (const { config, prompt } of tasks) {
+      const key = `${config.id}:${prompt.id}`;
+      allProbePromises.push(runProbe(config, prompt, forcedByKey.get(key)));
+    }
+    const probeResults = await Promise.all(allProbePromises);
+    if (onProgress) onProgress(total, total);
     return probeResults;
   }
   
@@ -598,19 +623,16 @@ export async function runAllProbes(
   // Run all probes concurrently (rate limiter controls concurrency in real mode)
   const probePromises = probeTasks.map(async ({ config, prompt }) => {
     const result = await runProbe(config, prompt);
-    
-    completed++;
-    
-    // Call progress callback if provided
-    if (onProgress) {
-      onProgress(completed, total);
-    }
-    
-    // Keep console.log for debugging (only in real mode, every 10 probes)
+
+    const myCompleted = ++completed;
+
+    if (onProbeComplete) onProbeComplete(myCompleted, total, result);
+    if (onProgress) onProgress(myCompleted, total);
+
     if (currentMode === "real" && completed % 10 === 0) {
       console.log(`   Progress: ${completed}/${total} probes completed`);
     }
-    
+
     return result;
   });
   
