@@ -287,6 +287,27 @@ export default function Dashboard() {
         throw new Error(data.message || data.error || "Simulation failed");
       }
 
+      // Debug: log run summary so you can screenshot the browser Console to share
+      const analysis = data.analysis;
+      const timeline = data.timeline;
+      const configIds = analysis?.configs ? Object.keys(analysis.configs) : [];
+      const eventsByConfig: Record<string, number> = {};
+      if (timeline?.configs) {
+        for (const [cid, breakPoints] of Object.entries(timeline.configs)) {
+          eventsByConfig[cid] = Array.isArray(breakPoints) ? breakPoints.length : 0;
+        }
+      }
+      const debug = (data as { _debug?: { resultCountByConfig?: Record<string, number>; eventCountByConfig?: Record<string, number> } })._debug;
+      console.log("[run-simulation] Run summary:", {
+        configsUsed: [data.configA?.id, data.configB?.id],
+        analysisConfigIds: configIds,
+        kPerConfig: configIds.reduce((acc, id) => ({ ...acc, [id]: analysis?.configs?.[id]?.k }), {} as Record<string, number>),
+        nPerConfig: configIds.reduce((acc, id) => ({ ...acc, [id]: analysis?.configs?.[id]?.n }), {} as Record<string, number>),
+        eventsPerConfigFromTimeline: eventsByConfig,
+        resultCountByConfig: debug?.resultCountByConfig,
+        eventCountByConfig: debug?.eventCountByConfig,
+      });
+
       setAnalysisData(data.analysis);
       setComparisonsData(data.comparisons);
       setDistributionsData(data.distributions);
