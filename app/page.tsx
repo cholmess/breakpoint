@@ -17,12 +17,13 @@ const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ d
 import { ResultsSummary } from "@/components/results-summary";
 import { RecommendationBanner } from "@/components/recommendation-banner";
 import { BreakFirstTimeline } from "@/components/break-first-timeline";
-import { Activity, Zap, Play, HelpCircle, Download, Square } from "lucide-react";
+import { Activity, Zap, Play, HelpCircle, Download, Square, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { exportReportAsPdf } from "@/lib/export-report";
+import { startDashboardTour } from "@/lib/dashboard-tour";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline } from "@/types/dashboard";
 
 // Default configs matching the schema
@@ -301,6 +302,15 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="default"
+              className="text-base font-bold text-muted-foreground hover:text-foreground"
+              onClick={() => startDashboardTour()}
+            >
+              <Compass className="h-5 w-5 mr-2" />
+              Take a tour
+            </Button>
             <Link href="/help">
               <Button
                 variant="ghost"
@@ -320,14 +330,16 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-4">
           {/* Left Column - Config & Controls */}
           <div className="col-span-4 space-y-4 sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
-            <FlipCard
-              configA={configA}
-              configB={configB}
-              onConfigAChange={setConfigA}
-              onConfigBChange={setConfigB}
-            />
+            <div id="tour-config-cards">
+              <FlipCard
+                configA={configA}
+                configB={configB}
+                onConfigAChange={setConfigA}
+                onConfigBChange={setConfigB}
+              />
+            </div>
             {/* Run mode: simulate (default) or real API calls */}
-            <Card className="py-1.5 glass-card">
+            <Card id="tour-run-mode" className="py-1.5 glass-card">
               <CardContent className="p-3">
                 <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-2 leading-relaxed">
                   Run Mode
@@ -389,28 +401,30 @@ export default function Dashboard() {
                     Missing API key(s) for your selected configs. Copy <code className="text-xs bg-muted px-1 rounded">.env.example</code> to <code className="text-xs bg-muted px-1 rounded">.env</code> in the project root and add the keys. See SETUP.md.
                   </p>
                 )}
-                <Button
-                  onClick={status === "running" ? stopSimulation : runSimulation}
-                  disabled={Boolean(missingKey)}
-                  className={cn(
-                    "w-full text-white",
-                    status === "running"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-[#25924d] hover:bg-[#25924d]/90"
-                  )}
-                >
-                  {status === "running" ? (
-                    <>
-                      <Square className="h-3.5 w-3.5 mr-1.5" />
-                      Stop Simulation
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-3.5 w-3.5 mr-1.5" />
-                      Run Simulation
-                    </>
-                  )}
-                </Button>
+                <span id="tour-run-simulation">
+                  <Button
+                    onClick={status === "running" ? stopSimulation : runSimulation}
+                    disabled={Boolean(missingKey)}
+                    className={cn(
+                      "w-full text-white",
+                      status === "running"
+                        ? "bg-red-600 hover:bg-red-700"
+                        : "bg-[#25924d] hover:bg-[#25924d]/90"
+                    )}
+                  >
+                    {status === "running" ? (
+                      <>
+                        <Square className="h-3.5 w-3.5 mr-1.5" />
+                        Stop Simulation
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-3.5 w-3.5 mr-1.5" />
+                        Run Simulation
+                      </>
+                    )}
+                  </Button>
+                </span>
               </CardContent>
             </Card>
             <WhatIfPromptChecker
@@ -422,12 +436,12 @@ export default function Dashboard() {
           </div>
 
           {/* Middle Column - Traffic Light & Probability */}
-          <div className="col-span-1 flex flex-col items-center pt-4 sticky top-24 self-start">
+          <div id="tour-traffic-light" className="col-span-1 flex flex-col items-center pt-4 sticky top-24 self-start">
             <TrafficLight status={status} />
           </div>
 
           {/* Right Column - Results */}
-          <div className="col-span-7 space-y-4">
+          <div id="tour-results" className="col-span-7 space-y-4">
             {loading ? (
               <div className="text-center py-8 text-base text-muted-foreground leading-relaxed">
                 Loading analysis data...
