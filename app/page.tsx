@@ -68,6 +68,8 @@ export default function Dashboard() {
   // Store the configs that were actually used in the last simulation
   const [simulatedConfigA, setSimulatedConfigA] = useState<Config | null>(null);
   const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
+  // Once configs are edited after a run, results stay hidden until the user runs again (even if they slide back)
+  const [configsEditedSinceRun, setConfigsEditedSinceRun] = useState(false);
 
   // Which API keys are set (for Real API mode warning)
   const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean } | null>(null);
@@ -88,6 +90,15 @@ export default function Dashboard() {
       .then(setApiKeysCheck)
       .catch(() => setApiKeysCheck(null));
   }, [runMode]);
+
+  // Mark that configs were edited after a run so we hide results until the next run
+  useEffect(() => {
+    if (simulatedConfigA == null || simulatedConfigB == null) return;
+    const differ =
+      JSON.stringify(configA) !== JSON.stringify(simulatedConfigA) ||
+      JSON.stringify(configB) !== JSON.stringify(simulatedConfigB);
+    if (differ) setConfigsEditedSinceRun(true);
+  }, [configA, configB, simulatedConfigA, simulatedConfigB]);
 
   // Infer provider from model name (matches server-side logic)
   const providerForModel = (model: string): "openai" | "gemini" | "manus" | null => {
@@ -252,6 +263,7 @@ export default function Dashboard() {
       // Store the configs that were actually used in this simulation
       setSimulatedConfigA(data.configA || configA);
       setSimulatedConfigB(data.configB || configB);
+      setConfigsEditedSinceRun(false);
       setStatus("success");
     } catch (err) {
       // Don't show error if it was aborted by user
@@ -447,16 +459,34 @@ export default function Dashboard() {
                   Please check your configuration and try again.
                 </div>
               </div>
-            ) : !comparisonsData || comparisonsData.comparisons.length === 0 ? (
-              <div className="text-center py-8 space-y-3">
-                <p className="text-base text-muted-foreground leading-relaxed">
-                  No comparisons yet. Run a simulation to see results.
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Configure Config A and Config B, then click "Run Simulation".
-                </p>
-              </div>
-            ) : (
+            ) : (() => {
+              const hasComparisons = comparisonsData && comparisonsData.comparisons.length > 0;
+
+              if (!hasComparisons) {
+                return (
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-base text-muted-foreground leading-relaxed">
+                      No comparisons yet. Run a simulation to see results.
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Configure Config A and Config B, then click "Run Simulation".
+                    </p>
+                  </div>
+                );
+              }
+              if (configsEditedSinceRun) {
+                return (
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-base text-muted-foreground leading-relaxed">
+                      Configs have changed since the last run.
+                    </p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Run a simulation to see results for your current configuration.
+                    </p>
+                  </div>
+                );
+              }
+              return (
               <div className="space-y-4">
                 {/* One-sentence recommendation */}
                 <RecommendationBanner
@@ -537,7 +567,7 @@ export default function Dashboard() {
                   hotspotMatrix={distributionsData?.hotspot_matrix || []}
                 />
               </div>
-            )}
+            ); })()}
           </div>
         </div>
       </main>
