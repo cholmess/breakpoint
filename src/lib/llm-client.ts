@@ -19,7 +19,7 @@ export function inferProvider(config: ProbeConfig): ProviderType {
     return config.provider;
   }
   const model = config.model?.toLowerCase() || "";
-  if (model.startsWith("gpt-") || model.startsWith("o1-")) {
+  if (model.startsWith("gpt-") || model.startsWith("o1")) {
     return "openai";
   }
   if (model.startsWith("gemini-")) {

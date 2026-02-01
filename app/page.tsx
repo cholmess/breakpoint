@@ -20,6 +20,7 @@ import { BreakFirstTimeline } from "@/components/break-first-timeline";
 import { Activity, Zap, Play, HelpCircle, Download, Square, Compass, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { exportReportAsPdf } from "@/lib/export-report";
@@ -68,7 +69,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  
+  // Streaming: live probe log and per-probe outcomes (filled on "done")
+  const [streamLog, setStreamLog] = useState<Array<{ index: number; total: number; config_id: string; prompt_id: string; family: string; use_case: string }>>([]);
+  const [probeOutcomes, setProbeOutcomes] = useState<Array<{ config_id: string; prompt_id: string; failure_modes: string[] }> | null>(null);
+
   // Store the configs that were actually used in the last simulation
   const [simulatedConfigA, setSimulatedConfigA] = useState<Config | null>(null);
   const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
@@ -98,6 +102,7 @@ export default function Dashboard() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const streamLogEndRef = useRef<HTMLDivElement | null>(null);
 
   // When Real API is selected, check which keys are set
   useEffect(() => {
@@ -111,6 +116,11 @@ export default function Dashboard() {
       .catch(() => setApiKeysCheck(null));
   }, [runMode]);
 
+  // Auto-scroll stream log to bottom when new entries arrive
+  useEffect(() => {
+    streamLogEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [streamLog]);
+
   // Mark that configs were edited after a run so we hide results until the next run
   useEffect(() => {
     if (simulatedConfigA == null || simulatedConfigB == null) return;
@@ -123,7 +133,7 @@ export default function Dashboard() {
   // Infer provider from model name (matches server-side logic)
   const providerForModel = (model: string): "openai" | "gemini" | "manus" | null => {
     const m = (model || "").toLowerCase();
-    if (m.startsWith("gpt-") || m.startsWith("o1-")) return "openai";
+    if (m.startsWith("gpt-") || m.startsWith("o1")) return "openai";
     if (m.startsWith("gemini-")) return "gemini";
     if (m.startsWith("manus-")) return "manus";
     return null;
@@ -198,7 +208,8 @@ export default function Dashboard() {
       timeoutIdRef.current = null;
     }
     
-    // Reset state
+    setStreamLog([]);
+    setProbeOutcomes(null);
     setStatus("idle");
     setProgress(0);
     setError("Simulation stopped by user");
@@ -208,56 +219,29 @@ export default function Dashboard() {
     setStatus("running");
     setError(null);
     setProgress(0);
-    
-    // Create abort controller for this request
+    setStreamLog([]);
+    setProbeOutcomes(null);
+
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
-    
-    // Calculate estimated time and increment rate based on mode + run size
-    // Quick: 20 prompts × 2 configs = 40 probes. Full: 200 × 2 = 400 probes
-    const probeCount = runSize === "quick" ? 40 : 400;
+
     const estimatedTimeMs =
       runMode === "simulate"
-        ? runSize === "quick"
-          ? 5000   // 40 probes batched ~5s
-          : 20000  // 400 probes ~20s
-        : runSize === "quick"
-          ? 30000  // 40 probes real ~30s with 20 concurrent
-          : 50000; // 400 probes real ~50s with increased concurrency
-    const progressCap = 95; // Allow progress up to 95%, then wait for completion
-    const updateIntervalMs = 600; // Update every 600ms
-    const incrementsToReachCap = (estimatedTimeMs / updateIntervalMs) * (progressCap / 100);
-    const incrementPerUpdate = progressCap / incrementsToReachCap;
-    
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        // Increment progress up to cap, then wait for actual completion
-        if (prev < progressCap) {
-          const next = prev + incrementPerUpdate;
-          // Round to 1 decimal place to avoid floating-point precision issues
-          const rounded = Math.round(next * 10) / 10;
-          return rounded > progressCap ? progressCap : rounded;
-        }
-        return prev;
-      });
-    }, updateIntervalMs);
-    progressIntervalRef.current = progressInterval;
-    
-    // Set timeout with buffer (2x estimated time: 40s for simulate, 7min for real)
+        ? runSize === "quick" ? 5000 : 20000
+        : runSize === "quick" ? 30000 : 50000;
     const timeoutMs = estimatedTimeMs * 2;
     const timeoutId = setTimeout(() => {
-      clearInterval(progressInterval);
+      abortController.abort();
       setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
       setStatus("idle");
       setProgress(0);
       abortControllerRef.current = null;
-      progressIntervalRef.current = null;
       timeoutIdRef.current = null;
     }, timeoutMs);
     timeoutIdRef.current = timeoutId;
-    
+
     try {
-      const response = await fetch("/api/run-simulation", {
+      const response = await fetch("/api/run-simulation/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -270,44 +254,89 @@ export default function Dashboard() {
         }),
         signal: abortController.signal,
       });
-      
-      clearTimeout(timeoutId);
-      clearInterval(progressInterval);
-      abortControllerRef.current = null;
-      progressIntervalRef.current = null;
-      timeoutIdRef.current = null;
-      setProgress(100);
-
-      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || "Simulation failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message ?? data.error ?? "Simulation failed");
       }
 
-      setAnalysisData(data.analysis);
-      setComparisonsData(data.comparisons);
-      setDistributionsData(data.distributions);
-      setTimeline(data.timeline ?? null);
-      setCostBands(data.costBands ?? null);
-      setCostMultiplier("1");
-      setLatencyMultiplier("1");
-      // Store the configs that were actually used in this simulation
-      setSimulatedConfigA(data.configA || configA);
-      setSimulatedConfigB(data.configB || configB);
-      setConfigsEditedSinceRun(false);
-      setStatus("success");
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let receivedDone = false;
+
+      const processBuffer = (): boolean => {
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
+        for (const part of parts) {
+          const line = part.trim().replace(/^data:\s*/, "");
+          if (!line) continue;
+          try {
+            const msg = JSON.parse(line) as { type: string; index?: number; total?: number; config_id?: string; prompt_id?: string; family?: string; use_case?: string; message?: string; analysis?: AnalysisData; comparisons?: ComparisonsData; distributions?: DistributionsData; timeline?: Timeline | null; configA?: Config; configB?: Config; costBands?: Record<string, CostBand>; probeOutcomes?: Array<{ config_id: string; prompt_id: string; failure_modes: string[] }> };
+            if (msg.type === "probe" && msg.index != null && msg.total != null && msg.config_id != null && msg.prompt_id != null) {
+              setStreamLog((prev) => [...prev, { index: msg.index!, total: msg.total!, config_id: msg.config_id!, prompt_id: msg.prompt_id!, family: msg.family ?? "", use_case: msg.use_case ?? "" }]);
+              setProgress((msg.index! / msg.total!) * 100);
+            } else if (msg.type === "done") {
+              receivedDone = true;
+              clearTimeout(timeoutId);
+              timeoutIdRef.current = null;
+              abortControllerRef.current = null;
+              setProgress(100);
+              setAnalysisData(msg.analysis ?? null);
+              setComparisonsData(msg.comparisons ?? null);
+              setDistributionsData(msg.distributions ?? null);
+              setTimeline(msg.timeline ?? null);
+              setCostBands(msg.costBands ?? null);
+              setCostMultiplier("1");
+              setLatencyMultiplier("1");
+              setSimulatedConfigA(msg.configA ?? configA);
+              setSimulatedConfigB(msg.configB ?? configB);
+              setProbeOutcomes(msg.probeOutcomes ?? null);
+              setConfigsEditedSinceRun(false);
+              setStatus("success");
+              return true;
+            } else if (msg.type === "error") {
+              throw new Error(msg.message ?? "Stream error");
+            }
+          } catch (parseErr) {
+            if (parseErr instanceof SyntaxError) continue;
+            throw parseErr;
+          }
+        }
+        return false;
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+          if (processBuffer()) return;
+        }
+        if (done) {
+          if (buffer.trim()) processBuffer();
+          break;
+        }
+      }
+
+      if (!receivedDone) {
+        clearTimeout(timeoutId);
+        abortControllerRef.current = null;
+        timeoutIdRef.current = null;
+        setError("Stream ended without completion");
+        setStatus("failure");
+      }
     } catch (err) {
-      // Don't show error if it was aborted by user
       if (err instanceof Error && err.name === "AbortError") {
         setStatus("idle");
         setProgress(0);
+        setStreamLog([]);
+        setProbeOutcomes(null);
         return;
       }
-      
       clearTimeout(timeoutId);
-      clearInterval(progressInterval);
       abortControllerRef.current = null;
-      progressIntervalRef.current = null;
       timeoutIdRef.current = null;
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
@@ -480,27 +509,47 @@ export default function Dashboard() {
                 Loading analysis data...
               </div>
             ) : status === "running" ? (
-              <div className="text-center py-8 space-y-4">
-                <div className="text-base text-muted-foreground mb-4 leading-relaxed">
-                  {progress >= 95 
-                    ? "Finalizing results..." 
-                    : `Running simulation... (est. ${
-                        runMode === "simulate"
-                          ? runSize === "quick" ? "~5s" : "~20s"
-                          : runSize === "quick" ? "~30s" : "~50s"
-                      } for ~${runSize === "quick" ? "40" : "400"} probes)`
-                  }
+              <div className="py-6 space-y-4">
+                <div className="text-base text-muted-foreground leading-relaxed">
+                  {progress >= 95
+                    ? "Finalizing results..."
+                    : (() => {
+                        const total = streamLog[streamLog.length - 1]?.total ?? (runSize === "quick" ? 40 : 400);
+                        const current = streamLog.length > 0 ? streamLog[streamLog.length - 1]?.index ?? 0 : 0;
+                        const configCount = 2;
+                        const promptCount = runSize === "quick" ? 20 : 200;
+                        return `Testing ${configCount} configs × ${promptCount} prompts — ${current}/${total} probes`;
+                      })()}
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-[#25924d] h-2 transition-all duration-300 ease-out"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-                <div className="text-sm text-muted-foreground leading-relaxed">
-                  {progress.toFixed(1)}%
-                  {progress >= 95 && <span className="ml-2 text-xs">(processing...)</span>}
-                </div>
+                <div className="text-sm text-muted-foreground mb-2">{progress.toFixed(1)}%</div>
+                <ScrollArea className="h-[240px] w-full rounded-md border border-border/30 bg-muted/10 p-2 font-mono text-xs">
+                  <div className="space-y-0.5">
+                    {streamLog.map((entry, i) => {
+                      const familyLabel = entry.family
+                        ? entry.family.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+                        : "Prompt";
+                      const configLabel = entry.config_id === "config-a" ? "Config A" : entry.config_id === "config-b" ? "Config B" : entry.config_id.replace(/-/g, " ");
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-muted-foreground">
+                          <span className="text-foreground/90 shrink-0 tabular-nums">
+                            {entry.index}/{entry.total}
+                          </span>
+                          <span className="shrink-0 text-muted-foreground/80">—</span>
+                          <span className="shrink-0 text-foreground/80">{familyLabel}</span>
+                          <span className="shrink-0 text-muted-foreground/70">·</span>
+                          <span className="shrink-0">{configLabel}</span>
+                        </div>
+                      );
+                    })}
+                    <div ref={streamLogEndRef} />
+                  </div>
+                </ScrollArea>
               </div>
             ) : error ? (
               <div className="text-center py-8 space-y-3">

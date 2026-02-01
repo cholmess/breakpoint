@@ -13,8 +13,11 @@ const MODELS_BY_PROVIDER: Record<
   { value: string; label: string }[]
 > = {
   openai: [
-    { value: "gpt-4", label: "GPT-4" },
+    { value: "gpt-5.2", label: "GPT-5.2" },
+    { value: "gpt-5.1", label: "GPT-5.1" },
+    { value: "gpt-5", label: "GPT-5" },
     { value: "gpt-4o", label: "GPT-4o" },
+    { value: "gpt-4", label: "GPT-4" },
     { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo" },
     { value: "o1-mini", label: "O1 Mini" },
     { value: "o1", label: "O1" },
