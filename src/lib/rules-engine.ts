@@ -179,6 +179,9 @@ export function getAdaptiveRules(
   costMultiplier: number = 1,
   latencyMultiplier: number = 1
 ): Rule[] {
+  // #region agent log
+  console.log('[DEBUG getAdaptiveRules]', {configMapKeys:[...configs.keys()],configBExists:configs.has('config-b'),configBId:configs.get('config-b')?.id});
+  // #endregion
   const thresholds = computeDynamicThresholds(results);
   
   // Use P95 as threshold, or fallback to defaults if P95 is too low
@@ -424,10 +427,16 @@ export function evaluateRules(
   result: ProbeResult,
   rules: Rule[]
 ): FailureEvent[] {
+  // #region agent log
+  if (result.config_id === 'config-b') { console.log('[DEBUG evaluateRules]', {config_id:result.config_id,prompt_id:result.prompt_id,latency:result.telemetry.latency_ms,cost:result.estimated_cost,context_usage:result.context_usage}); }
+  // #endregion
   const events: FailureEvent[] = [];
   
   for (const rule of rules) {
-    if (rule.condition(result)) {
+    // #region agent log
+    const condResult = rule.condition(result); if (result.config_id === 'config-b') { console.log('[DEBUG rule]', {config_id:result.config_id,rule_id:rule.id,rule_name:rule.name,condition_result:condResult}); }
+    // #endregion
+    if (condResult) {
       // Handle severity as either a constant or a function
       const severity =
         typeof rule.severity === "function"

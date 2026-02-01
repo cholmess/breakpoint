@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
         const promptById = new Map(prompts.map((p) => [p.id, p]));
         /** In simulate mode, delay between events so the UI shows 1/40, 2/40, ... line by line. Real mode has natural pacing. */
-        const streamDelayMs = mode === "simulate" ? 55 : 0;
+        const streamDelayMs = mode === "simulate" ? 15 : 0;
         const results = await runAllProbes(
           configs,
           prompts,
