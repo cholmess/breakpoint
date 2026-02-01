@@ -527,8 +527,8 @@ export type ProgressCallback = (completed: number, total: number) => void;
  */
 export type ProbeCompleteCallback = (completed: number, total: number, result: ProbeResult) => void | Promise<void>;
 
-/** When streaming in simulate mode, run one probe at a time so the UI can show 1/40, 2/40, ... line by line. */
-const SIMULATE_STREAM_BATCH_SIZE = 1;
+/** Batch size for simulate mode when onProbeComplete callback is provided (streaming). */
+const SIMULATE_STREAM_BATCH_SIZE = 10;
 
 /**
  * Run all probes (all configs × all prompts)
@@ -548,7 +548,7 @@ export async function runAllProbes(
   const total = configs.length * prompts.length;
   let completed = 0;
 
-  // Guaranteed demo mix (Problem 5): assign one probe per failure mode so all 6 appear
+  // Guaranteed demo mix: ensure each failure mode appears across diverse families (2-3 per mode for balance)
   const forcedByKey = new Map<string, FailureMode>();
   const tasks: { config: ProbeConfig; prompt: PromptRecord }[] = [];
   for (const config of configs) {
@@ -556,22 +556,41 @@ export async function runAllProbes(
       tasks.push({ config, prompt });
     }
   }
+  
+  // Get unique prompt families
+  const families = [...new Set(prompts.map(p => p.family))];
+  
   const assigned = new Set<number>();
+  const MAX_FORCED_PER_MODE = 2; // Limit to 2 forced failures per mode for balance
+  
+  // For each failure mode, assign a few probes across different families
   for (const mode of ALL_FAILURE_MODES) {
-    for (let i = 0; i < tasks.length; i++) {
+    let assignedForMode = 0;
+    const usedFamilies = new Set<string>();
+    
+    for (let i = 0; i < tasks.length && assignedForMode < MAX_FORCED_PER_MODE; i++) {
       if (assigned.has(i)) continue;
       const { config, prompt } = tasks[i];
+      
+      // Prefer diverse families for this mode
+      if (usedFamilies.has(prompt.family)) continue;
+      
       const canSupport =
         mode === "tool_timeout_risk"
           ? config.tools_enabled && prompt.expects_tools
           : mode === "retrieval_noise_risk"
             ? config.top_k > 8
             : true;
+      
       if (canSupport) {
         const key = `${config.id}:${prompt.id}`;
         forcedByKey.set(key, mode);
         assigned.add(i);
-        break;
+        usedFamilies.add(prompt.family);
+        assignedForMode++;
+        // #region agent log
+        console.log('[DEBUG demo mix]', {mode,family:prompt.family,taskIndex:i,config_id:config.id,prompt_id:prompt.id});
+        // #endregion
       }
     }
   }

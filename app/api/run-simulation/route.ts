@@ -194,6 +194,10 @@ export async function POST(req: NextRequest) {
     const configIds = configs.map(c => c.id);
     const trialsPerConfig = computeTrialsPerConfig(results);
 
+    // #region agent log
+    const configBSample = results.find(r => r.config_id === 'config-b'); console.log('[DEBUG run-simulation]', {configMapKeys:[...configMap.keys()],normalizedAId:normalizedA.id,normalizedBId:normalizedB.id,configBSample:configBSample?{config_id:configBSample.config_id,latency:configBSample.telemetry.latency_ms,cost:configBSample.estimated_cost,context_usage:configBSample.context_usage}:null});
+    // #endregion
+
     // Cost vs reliability: precompute bands (fewer combos to avoid timeout)
     const costMults = [1, 2, 3] as const;
     const latencyMults = [1, 2] as const;
@@ -218,6 +222,19 @@ export async function POST(req: NextRequest) {
     const timeline = buildBreakFirstTimeline(events1x);
     logAnalysisKn(analysis);
 
+    // Debug: result and event counts per config to track "one config always 0" bug
+    const resultCountByConfig: Record<string, number> = {};
+    const eventCountByConfig: Record<string, number> = {};
+    for (const r of results) {
+      resultCountByConfig[r.config_id] = (resultCountByConfig[r.config_id] ?? 0) + 1;
+    }
+    for (const e of events1x) {
+      eventCountByConfig[e.config_id] = (eventCountByConfig[e.config_id] ?? 0) + 1;
+    }
+    console.log("[run-simulation] resultCountByConfig:", resultCountByConfig);
+    console.log("[run-simulation] eventCountByConfig:", eventCountByConfig);
+    console.log("[run-simulation] configMap keys:", [...configMap.keys()]);
+
     return NextResponse.json({
       analysis,
       comparisons,
@@ -226,6 +243,7 @@ export async function POST(req: NextRequest) {
       configA: normalizedA,
       configB: normalizedB,
       costBands,
+      _debug: { resultCountByConfig, eventCountByConfig },
     });
   } catch (err) {
     console.error("Run simulation error:", err);
