@@ -173,9 +173,11 @@ export async function POST(req: NextRequest) {
     const filtered = filterPromptsByFamily(prompts, promptFamily || "all");
     // If filter matched no family (e.g. UI sent "long-context" but suite has "short_plain"), use all prompts
     prompts = filtered.length > 0 ? filtered : prompts;
-    // Quick run: 20 prompts for demo-friendly real mode (~40 probes, ~30-60s)
+    // Quick run: 20 prompts. Full run: 200 prompts (consistent with UI "Full (200 prompts)").
     if (runSize === "quick") {
       prompts = prompts.slice(0, 20);
+    } else if (runSize === "full") {
+      prompts = prompts.slice(0, 200);
     }
     if (prompts.length === 0) {
       return NextResponse.json(
