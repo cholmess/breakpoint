@@ -13,6 +13,7 @@ const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ d
   ssr: false,
 });
 import { ResultsSummary } from "@/components/results-summary";
+import { RecommendationBanner } from "@/components/recommendation-banner";
 import { Activity, Zap, Play, HelpCircle, Download, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -453,6 +454,13 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* One-sentence recommendation */}
+                <RecommendationBanner
+                  analysisData={analysisData}
+                  comparisonsData={comparisonsData}
+                  configA={simulatedConfigA || configA}
+                  configB={simulatedConfigB || configB}
+                />
                 {/* Export report */}
                 <div className="flex justify-end">
                   <Button
