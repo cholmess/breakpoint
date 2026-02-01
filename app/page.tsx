@@ -20,6 +20,7 @@ import { BreakFirstTimeline } from "@/components/break-first-timeline";
 import { Activity, Zap, Play, HelpCircle, Download, Square, Compass, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import Link from "next/link";
 import { usePlainLanguage } from "@/lib/plain-language-context";
 import { useText } from "@/hooks/use-text";
