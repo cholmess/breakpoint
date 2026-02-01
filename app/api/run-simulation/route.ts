@@ -6,10 +6,11 @@
  * evaluates rules, and returns analysis, comparisons, distributions,
  * and timeline for the dashboard.
  *
- * Request body: { configA, configB, seed?: number, promptFamily?: string, mode?: "simulate" | "real" }
+ * Request body: { configA, configB, seed?: number, promptFamily?: string, mode?: "simulate" | "real", customPrompts?: PromptRecord[] }
  * Response: { analysis, comparisons, distributions, timeline }
  * 
  * mode: "simulate" (default) - uses generated telemetry, "real" - calls actual LLM APIs
+ * customPrompts: optional array of PromptRecord[] - if provided, uses these instead of loading from file
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
       runSize = "full",
       seed = 42,
       mode = "simulate",
+      customPrompts,
     }: {
       configA: ProbeConfig;
       configB: ProbeConfig;
@@ -91,6 +93,7 @@ export async function POST(req: NextRequest) {
       runSize?: "quick" | "full";
       seed?: number;
       mode?: "simulate" | "real";
+      customPrompts?: PromptRecord[];
     } = body;
 
     if (!configA || !configB) {
@@ -158,30 +161,42 @@ export async function POST(req: NextRequest) {
     clearTelemetry();
 
     let prompts: PromptRecord[] = [];
-    try {
-      prompts = loadPrompts(PROMPTS_PATH);
-    } catch (e) {
-      return NextResponse.json(
-        {
-          error: "Failed to load prompts",
-          message: e instanceof Error ? e.message : String(e),
-        },
-        { status: 500 }
-      );
-    }
+    
+    // Use custom prompts if provided, otherwise load from file
+    if (customPrompts && Array.isArray(customPrompts) && customPrompts.length > 0) {
+      prompts = customPrompts;
+      console.log(`[run-simulation] Using ${prompts.length} custom prompts`);
+    } else {
+      try {
+        prompts = loadPrompts(PROMPTS_PATH);
+      } catch (e) {
+        return NextResponse.json(
+          {
+            error: "Failed to load prompts",
+            message: e instanceof Error ? e.message : String(e),
+          },
+          { status: 500 }
+        );
+      }
 
-    const filtered = filterPromptsByFamily(prompts, promptFamily || "all");
-    // If filter matched no family (e.g. UI sent "long-context" but suite has "short_plain"), use all prompts
-    prompts = filtered.length > 0 ? filtered : prompts;
-    // Quick run: 20 prompts. Full run: 200 prompts (consistent with UI "Full (200 prompts)").
-    if (runSize === "quick") {
-      prompts = prompts.slice(0, 20);
-    } else if (runSize === "full") {
-      prompts = prompts.slice(0, 200);
+      const filtered = filterPromptsByFamily(prompts, promptFamily || "all");
+      // If filter matched no family (e.g. UI sent "long-context" but suite has "short_plain"), use all prompts
+      prompts = filtered.length > 0 ? filtered : prompts;
     }
+    
+    // Quick run: 20 prompts. Full run: 200 prompts (consistent with UI "Full (200 prompts)").
+    // Only apply size limit if not using custom prompts (custom prompts already have the right count)
+    if (!customPrompts || customPrompts.length === 0) {
+      if (runSize === "quick") {
+        prompts = prompts.slice(0, 20);
+      } else if (runSize === "full") {
+        prompts = prompts.slice(0, 200);
+      }
+    }
+    
     if (prompts.length === 0) {
       return NextResponse.json(
-        { error: "No prompts to run (check prompt suite path)" },
+        { error: "No prompts to run (check prompt suite path or custom prompts)" },
         { status: 400 }
       );
     }
@@ -194,10 +209,6 @@ export async function POST(req: NextRequest) {
     const configIds = configs.map(c => c.id);
     const trialsPerConfig = computeTrialsPerConfig(results);
 
-    // #region agent log
-    const configBSample = results.find(r => r.config_id === 'config-b'); console.log('[DEBUG run-simulation]', {configMapKeys:[...configMap.keys()],normalizedAId:normalizedA.id,normalizedBId:normalizedB.id,configBSample:configBSample?{config_id:configBSample.config_id,latency:configBSample.telemetry.latency_ms,cost:configBSample.estimated_cost,context_usage:configBSample.context_usage}:null});
-    // #endregion
-
     // Cost vs reliability: precompute bands (fewer combos to avoid timeout)
     const costMults = [1, 2, 3] as const;
     const latencyMults = [1, 2] as const;
@@ -205,7 +216,7 @@ export async function POST(req: NextRequest) {
 
     for (const c of costMults) {
       for (const l of latencyMults) {
-        const rules = getAdaptiveRules(configMap, results, c, l);
+        const rules = getAdaptiveRules(configMap, results, c, l, mode);
         const events = evaluateAllRules(results, rules);
         const analysis = runAnalysis(events, prompts, configIds, trialsPerConfig);
         const statsList = Object.values(analysis.configs);
@@ -216,7 +227,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { analysis, comparisons, distributions } = costBands["1_1"];
-    const rules1x = getAdaptiveRules(configMap, results, 1, 1);
+    const rules1x = getAdaptiveRules(configMap, results, 1, 1, mode);
     const events1x = evaluateAllRules(results, rules1x);
     logRuleEvaluationSummary(results, events1x);
     const timeline = buildBreakFirstTimeline(events1x);

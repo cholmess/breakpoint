@@ -96,6 +96,28 @@ The user wants prompts for this use case: "${useCase}"
 
 Generate ${count} diverse, realistic prompts that would be typical for this domain.
 
+CRITICAL - STRESS TESTING REQUIREMENTS:
+Your goal is to generate prompts that will STRESS-TEST the LLM system and reveal potential failures.
+
+30-50% of prompts should be designed to trigger these specific failure modes:
+- context_overflow: Very long prompts with extensive context (3000+ tokens when tokenized), including large documents, codebases, or detailed specifications
+- latency_breach: Multi-step tasks requiring many tool calls (5+ sequential operations), complex workflows, or time-sensitive operations
+- cost_runaway: Prompts requiring large outputs with multiple iterations, extensive generation, or high token consumption
+- tool_timeout_risk: Time-sensitive tasks with complex tool orchestration, nested function calls, or operations that may exceed time limits
+- retrieval_noise_risk: Ambiguous queries requiring many document lookups, vague instructions needing clarification, or queries that may retrieve irrelevant context
+
+Include edge cases like:
+- Extremely long documents or code snippets (5000+ words)
+- Nested/recursive requirements that require multiple passes
+- Ambiguous instructions that require clarification or multiple interpretations
+- Time-sensitive operations with strict deadlines
+- Complex multi-tool workflows with dependencies
+- Prompts that push context window limits
+- Tasks requiring extensive output generation
+
+The remaining 50-70% should be normal, reasonable prompts to establish a baseline.
+This mix ensures realistic testing with both success and failure cases.
+
 SCHEMA REQUIREMENTS:
 Each prompt must be a JSON object with these exact fields:
 - id: string in format "p_XXX" where XXX is a 3-digit number (001, 002, etc.)
@@ -114,7 +136,7 @@ FAMILY DISTRIBUTION:
 COMPLEXITY LEVEL: ${complexity}
 - simple: Basic questions, straightforward requests
 - moderate: Mix of simple and complex scenarios
-- complex: Advanced multi-step tasks, nuanced questions
+- complex: Advanced multi-step tasks, nuanced questions, stress-testing scenarios
 
 DOMAIN GUIDANCE:
 For "${useCase}", generate prompts that are realistic and diverse. Examples:
@@ -123,6 +145,7 @@ For "${useCase}", generate prompts that are realistic and diverse. Examples:
 - Code review: bug detection, style suggestions, security analysis, performance optimization
 - Medical records: summarization, diagnosis assistance, treatment recommendations
 - Financial reports: data extraction, trend analysis, risk assessment
+- Educational content: complex explanations, multi-step problem solving, interactive learning scenarios
 
 EXAMPLE PROMPTS (follow this format):
 ${JSON.stringify(examples, null, 2)}
@@ -133,6 +156,7 @@ IMPORTANT:
 - Match the family type correctly (short vs long, tool vs plain, doc vs non-doc)
 - Set expects_tools and expects_citations accurately based on prompt content
 - Use appropriate use_case labels that match the domain
+- Remember: 30-50% should be challenging/stress-testing prompts that will trigger failure modes
 
 Return a JSON object with a "prompts" field containing an array of prompt objects. Example format:
 {

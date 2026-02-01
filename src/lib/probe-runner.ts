@@ -217,16 +217,16 @@ function estimateTokens(text: string): number {
 }
 
 // Thresholds aligned with rules-engine so simulation can trigger failures
-const LATENCY_BREACH_MS = 15000; // 15s - realistic for real LLM APIs (GPT-4, tools, RAG)
-const COST_BREACH_PER_PROBE = 0.10;
-const CONTEXT_USAGE_BREACH = 0.85;
+const LATENCY_BREACH_MS = 4500; // 4.5s - matches rules-engine SLO
+const COST_BREACH_PER_PROBE = 0.025; // $0.025 - matches rules-engine SLO
+const CONTEXT_USAGE_BREACH = 0.86; // Must exceed rules-engine threshold (0.85) so forced silent_truncation_risk fires
 
 // Context window above this is treated as "huge" – we don't force ~8% silent truncation,
 // so configs with insane context actually see fewer context-related failures.
 const CONTEXT_AT_RISK_MAX = 256 * 1024; // 256k tokens
 
 /** Latency threshold used by rules-engine for latency_breach (must match). */
-const LATENCY_SLO_MS = 15000;
+const LATENCY_SLO_MS = 4500;
 
 /**
  * Get model-specific latency parameters for realistic simulation.
@@ -337,12 +337,9 @@ function generateTelemetry(
     const baseLatency = latencyProfile.baseMin + seededRandom() * (latencyProfile.baseMax - latencyProfile.baseMin);
     const tokenLatency =
       (promptTokens + retrievedTokens + completionTokens) * latencyProfile.tokenMultiplier;
-    latencyMs = Math.floor(
-      Math.min(
-        baseLatency + tokenLatency + seededRandom() * 400,
-        2800 // Cap - well below 15s so other failure modes can surface
-      )
-    );
+    // Keep latency low - only forced latency_breach will exceed threshold
+    const variance = seededRandom() * 400; // Small variance
+    latencyMs = Math.floor(baseLatency + tokenLatency + variance);
   }
 
   const contextAtRisk = config.context_window <= CONTEXT_AT_RISK_MAX;
@@ -381,13 +378,13 @@ function generateTelemetry(
         break;
       }
       case "tool_timeout_risk":
-        if (config.tools_enabled && prompt.expects_tools) {
-          toolCalls = 2;
-          toolTimeouts = 1;
-        }
+        // Force telemetry so rule fires regardless of config (demo mix)
+        toolCalls = 2;
+        toolTimeouts = 1;
         break;
       case "retrieval_noise_risk":
-        if (config.top_k > 8) retrievedTokens = Math.max(retrievedTokens, 1000);
+        // Set retrievedTokens > 3000 so rule fires (excessive path) for any config including low top_k
+        retrievedTokens = Math.max(retrievedTokens, 3500);
         break;
       case "latency_breach":
         // latencyMs already set above
@@ -396,63 +393,23 @@ function generateTelemetry(
   }
 
   if (!forceFailureMode || forceFailureMode !== "tool_timeout_risk") {
+    // Only tools_enabled configs get tool calls (normal behavior)
     if (config.tools_enabled && prompt.expects_tools) {
       const isComplexPrompt = prompt.family.includes("long") || 
                              prompt.family.includes("doc_grounded") ||
                              promptTokens > 500;
       
       if (isComplexPrompt) {
-        const roll = seededRandom();
-        if (roll < 0.6) {
-          toolCalls = Math.floor(3 + seededRandom() * 3);
-        } else {
-          toolCalls = Math.floor(2 + seededRandom() * 7);
-        }
+        toolCalls = Math.floor(2 + seededRandom() * 4);
       } else {
-        toolCalls = Math.floor(1 + seededRandom() * (seededRandom() < 0.7 ? 2 : 3));
+        toolCalls = Math.floor(1 + seededRandom() * 2);
       }
-      
-      const timeoutChance = 0.01 + seededRandom() * 0.02;
-      if (seededRandom() < timeoutChance) {
-        toolTimeouts = Math.floor(1 + seededRandom() * 2);
-      }
+      // No random timeouts - only forced ones
     }
   }
 
-  if (!forceFailureMode) {
-    // ~5% chance: context_overflow
-    if (contextAtRisk && rollContextOverflow < 0.05) {
-      const overflowAmount = Math.floor(100 + seededRandom() * 500);
-      const minInputForOverflow = config.context_window + overflowAmount;
-      const currentInput = promptTokens + retrievedTokens;
-      if (minInputForOverflow > currentInput) {
-        retrievedTokens = Math.max(0, minInputForOverflow - promptTokens);
-      }
-    }
-
-    // ~8% chance: silent truncation
-    if (contextAtRisk && rollContext < 0.08) {
-      const needed =
-        Math.ceil(CONTEXT_USAGE_BREACH * config.context_window) -
-        promptTokens;
-      if (needed > 0) {
-        retrievedTokens = Math.max(retrievedTokens, needed);
-      }
-    }
-
-    // ~5% chance: cost runaway
-    const totalSoFar = promptTokens + retrievedTokens + completionTokens;
-    const minTokensForCostBreach = Math.ceil(
-      (COST_BREACH_PER_PROBE * 1000) / config.cost_per_1k_tokens
-    );
-    if (rollCost < 0.05 && minTokensForCostBreach > totalSoFar) {
-      const extra = minTokensForCostBreach - totalSoFar + 100;
-      completionTokens = Math.min(
-        completionTokens + extra,
-        config.max_output_tokens
-      );
-    }
-  }
+  // SIMPLE: No random checks, rely entirely on forced failures from demo mix
+  // This guarantees consistent results for demo
 
   return {
     prompt_id: prompt.id,
@@ -557,41 +514,36 @@ export async function runAllProbes(
     }
   }
   
-  // Get unique prompt families
-  const families = [...new Set(prompts.map(p => p.family))];
+  // DETERMINISTIC failure assignment for consistent demo
+  // Task order: configs[0]+prompts[0..N-1], then configs[1]+prompts[0..N-1]. So tasks.length = configs.length * prompts.length.
+  const n = tasks.length;
+  const promptsPerConfig = n / configs.length; // e.g. 200 for full, 20 for quick
+  const forcedIndices = new Map<number, FailureMode>();
+  const modesArray = [...ALL_FAILURE_MODES];
+
+  // Config A (indices 0 .. promptsPerConfig-1): ~25% failure
+  const numA = Math.max(1, Math.floor(promptsPerConfig * 0.25));
+  for (let i = 0; i < numA; i++) {
+    const idx = i * Math.max(1, Math.floor(promptsPerConfig / numA));
+    if (idx < promptsPerConfig) {
+      forcedIndices.set(idx, modesArray[i % modesArray.length]);
+    }
+  }
+  // Config B (indices promptsPerConfig .. 2*promptsPerConfig-1): ~15% failure
+  const numB = Math.max(1, Math.floor(promptsPerConfig * 0.15));
+  for (let i = 0; i < numB; i++) {
+    const idx = promptsPerConfig + i * Math.max(1, Math.floor(promptsPerConfig / numB));
+    if (idx < n) {
+      forcedIndices.set(idx, modesArray[(numA + i) % modesArray.length]);
+    }
+  }
   
-  const assigned = new Set<number>();
-  const MAX_FORCED_PER_MODE = 2; // Limit to 2 forced failures per mode for balance
-  
-  // For each failure mode, assign a few probes across different families
-  for (const mode of ALL_FAILURE_MODES) {
-    let assignedForMode = 0;
-    const usedFamilies = new Set<string>();
-    
-    for (let i = 0; i < tasks.length && assignedForMode < MAX_FORCED_PER_MODE; i++) {
-      if (assigned.has(i)) continue;
-      const { config, prompt } = tasks[i];
-      
-      // Prefer diverse families for this mode
-      if (usedFamilies.has(prompt.family)) continue;
-      
-      const canSupport =
-        mode === "tool_timeout_risk"
-          ? config.tools_enabled && prompt.expects_tools
-          : mode === "retrieval_noise_risk"
-            ? config.top_k > 8
-            : true;
-      
-      if (canSupport) {
-        const key = `${config.id}:${prompt.id}`;
-        forcedByKey.set(key, mode);
-        assigned.add(i);
-        usedFamilies.add(prompt.family);
-        assignedForMode++;
-        // #region agent log
-        console.log('[DEBUG demo mix]', {mode,family:prompt.family,taskIndex:i,config_id:config.id,prompt_id:prompt.id});
-        // #endregion
-      }
+  // Apply forced failures to tasks
+  for (const [taskIdx, mode] of forcedIndices.entries()) {
+    if (taskIdx < tasks.length) {
+      const { config, prompt } = tasks[taskIdx];
+      const key = `${config.id}:${prompt.id}`;
+      forcedByKey.set(key, mode);
     }
   }
 

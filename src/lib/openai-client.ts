@@ -34,13 +34,24 @@ export async function callOpenAIAPI(
   const modelName = config.model || "gpt-4o-mini";
   const startTime = Date.now();
 
+  // Newer models (o1, gpt-4.5, etc.) use max_completion_tokens instead of max_tokens
+  const usesNewAPI = modelName.startsWith("o1") || modelName.includes("gpt-5") || modelName === "gpt-4.5-turbo";
+  
   try {
-    const response = await client.chat.completions.create({
+    const completionParams: any = {
       model: modelName,
       messages: [{ role: "user", content: prompt.prompt }],
-      max_tokens: config.max_output_tokens,
       temperature: config.temperature,
-    });
+    };
+    
+    // Use correct parameter name based on model
+    if (usesNewAPI) {
+      completionParams.max_completion_tokens = config.max_output_tokens;
+    } else {
+      completionParams.max_tokens = config.max_output_tokens;
+    }
+    
+    const response = await client.chat.completions.create(completionParams);
 
     const endTime = Date.now();
     const latencyMs = endTime - startTime;
