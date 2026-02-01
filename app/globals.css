@@ -291,3 +291,12 @@
 .recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-value {
   color: white !important;
 }
+
+/* Hide scrollbar while keeping scroll behavior (config column, etc.) */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

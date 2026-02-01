@@ -362,7 +362,7 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-12 gap-4">
           {/* Left Column - Config & Controls */}
-          <div className="col-span-4 space-y-4 sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
+          <div className="col-span-4 space-y-4 sticky top-24 self-start max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-hide">
             <div id="tour-config-cards">
               <FlipCard
                 configA={configA}
@@ -638,7 +638,8 @@ export default function Dashboard() {
                         displayComparisonsData,
                         displayDistributionsData,
                         simulatedConfigA || configA,
-                        simulatedConfigB || configB
+                        simulatedConfigB || configB,
+                        timeline
                       )
                     }
                   >
