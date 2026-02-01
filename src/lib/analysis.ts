@@ -29,6 +29,37 @@ function buildPromptFamilyMap(prompts: PromptRecord[]): Map<string, string> {
 }
 
 /**
+ * Compute hotspot matrix: cross-tabulation of failure_mode × prompt_family.
+ * Returns array of { failure_mode, family, count } for all combinations that have count > 0.
+ */
+export function computeHotspotMatrix(
+  events: FailureEvent[],
+  prompts: PromptRecord[]
+): { failure_mode: FailureMode; family: string; count: number }[] {
+  if (!events || events.length === 0) {
+    return [];
+  }
+  const familyMap = buildPromptFamilyMap(prompts ?? []);
+  const matrix = new Map<string, number>();
+
+  for (const e of events) {
+    const family = familyMap.get(e.prompt_id) ?? "unknown";
+    const key = `${e.failure_mode}|${family}`;
+    matrix.set(key, (matrix.get(key) ?? 0) + 1);
+  }
+
+  const hotspots: { failure_mode: FailureMode; family: string; count: number }[] = [];
+  for (const [key, count] of matrix.entries()) {
+    const [failure_mode, family] = key.split("|");
+    hotspots.push({ failure_mode: failure_mode as FailureMode, family, count });
+  }
+
+  // Sort by count descending
+  hotspots.sort((a, b) => b.count - a.count);
+  return hotspots;
+}
+
+/**
  * Distributions by failure mode and by prompt family.
  * Edge case: empty events → returns empty by_failure_mode and by_prompt_family.
  */
@@ -37,7 +68,7 @@ export function modeDistributions(
   prompts: PromptRecord[]
 ): DistributionsOutput {
   if (!events || events.length === 0) {
-    return { by_failure_mode: {}, by_prompt_family: {} };
+    return { by_failure_mode: {}, by_prompt_family: {}, hotspot_matrix: [] };
   }
   const familyMap = buildPromptFamilyMap(prompts ?? []);
   const byMode: Record<string, { count: number }> = {};
@@ -71,9 +102,12 @@ export function modeDistributions(
     };
   }
 
+  const hotspot_matrix = computeHotspotMatrix(events, prompts);
+
   return {
     by_failure_mode: byFailureMode,
     by_prompt_family: byPromptFamily,
+    hotspot_matrix,
   };
 }
 

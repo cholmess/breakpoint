@@ -129,7 +129,14 @@ export interface DistributionEntry {
   proportion: number;
 }
 
+export interface HotspotEntry {
+  failure_mode: FailureMode;
+  family: string;
+  count: number;
+}
+
 export interface DistributionsOutput {
   by_failure_mode: Record<string, DistributionEntry>; // keyed by FailureMode
   by_prompt_family: Record<string, DistributionEntry>; // keyed by family
+  hotspot_matrix?: HotspotEntry[]; // cross-tabulation of failure_mode × family
 }
