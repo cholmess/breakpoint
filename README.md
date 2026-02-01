@@ -6,7 +6,11 @@
 
 ## For Judges
 
-### Run it in 2 minutes
+### Try it
+
+**Live demo:** [https://breakpoint-liart.vercel.app/](https://breakpoint-liart.vercel.app/)
+
+**Or run locally (2 minutes):**
 
 ```bash
 npm install
