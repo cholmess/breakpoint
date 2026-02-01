@@ -189,19 +189,32 @@ export async function POST(req: NextRequest) {
     const configMap = new Map<string, ProbeConfig>(
       configs.map((c) => [c.id, c])
     );
-    // Use adaptive rules with dynamic P95 thresholds for latency and cost
-    const rules = getAdaptiveRules(configMap, results);
-    const events = evaluateAllRules(results, rules);
-    logRuleEvaluationSummary(results, events);
-    const timeline = buildBreakFirstTimeline(events);
-
     const configIds = configs.map(c => c.id);
     const trialsPerConfig = computeTrialsPerConfig(results);
-    const analysis = runAnalysis(events, prompts, configIds, trialsPerConfig);
+
+    // Cost vs reliability: precompute bands (fewer combos to avoid timeout)
+    const costMults = [1, 2, 3] as const;
+    const latencyMults = [1, 2] as const;
+    const costBands: Record<string, { analysis: ReturnType<typeof runAnalysis>; comparisons: ReturnType<typeof runComparisons>; distributions: ReturnType<typeof runDistributions> }> = {};
+
+    for (const c of costMults) {
+      for (const l of latencyMults) {
+        const rules = getAdaptiveRules(configMap, results, c, l);
+        const events = evaluateAllRules(results, rules);
+        const analysis = runAnalysis(events, prompts, configIds, trialsPerConfig);
+        const statsList = Object.values(analysis.configs);
+        const comparisons = runComparisons(statsList);
+        const distributions = runDistributions(events, prompts);
+        costBands[`${c}_${l}`] = { analysis, comparisons, distributions };
+      }
+    }
+
+    const { analysis, comparisons, distributions } = costBands["1_1"];
+    const rules1x = getAdaptiveRules(configMap, results, 1, 1);
+    const events1x = evaluateAllRules(results, rules1x);
+    logRuleEvaluationSummary(results, events1x);
+    const timeline = buildBreakFirstTimeline(events1x);
     logAnalysisKn(analysis);
-    const statsList = Object.values(analysis.configs);
-    const comparisons = runComparisons(statsList);
-    const distributions = runDistributions(events, prompts);
 
     return NextResponse.json({
       analysis,
@@ -210,6 +223,7 @@ export async function POST(req: NextRequest) {
       timeline,
       configA: normalizedA,
       configB: normalizedB,
+      costBands,
     });
   } catch (err) {
     console.error("Run simulation error:", err);
