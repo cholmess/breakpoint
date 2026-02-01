@@ -8,6 +8,7 @@ import { DistributionCharts } from "@/components/distribution-charts";
 import { FailureBreakdown } from "@/components/failure-breakdown";
 import { ConfidenceBand } from "@/components/confidence-band";
 import { FailureHotspotMatrix } from "@/components/failure-hotspot-matrix";
+import { WhatIfPromptChecker } from "@/components/what-if-prompt-checker";
 import dynamic from "next/dynamic";
 
 const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ default: mod.OrbTrail })), {
@@ -105,6 +106,14 @@ export default function Dashboard() {
     runMode === "real" &&
     apiKeysCheck &&
     ((needsOpenai && !apiKeysCheck.openai) || (needsGemini && !apiKeysCheck.gemini) || (needsManus && !apiKeysCheck.manus));
+
+  const configAProvider = providerForModel(configA.model);
+  const canUseRealApiForConfigA =
+    runMode !== "real" ||
+    !apiKeysCheck ||
+    (configAProvider === "openai" && apiKeysCheck.openai) ||
+    (configAProvider === "gemini" && apiKeysCheck.gemini) ||
+    (configAProvider === "manus" && apiKeysCheck.manus);
 
   // Fetch data from API routes (non-blocking - show page immediately)
   useEffect(() => {
@@ -404,6 +413,12 @@ export default function Dashboard() {
                 </Button>
               </CardContent>
             </Card>
+            <WhatIfPromptChecker
+              config={configA}
+              configLabel="Config A"
+              runMode={runMode}
+              canUseRealApi={canUseRealApiForConfigA}
+            />
           </div>
 
           {/* Middle Column - Traffic Light & Probability */}
