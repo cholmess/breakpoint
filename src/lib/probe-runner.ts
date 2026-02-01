@@ -527,8 +527,8 @@ export type ProgressCallback = (completed: number, total: number) => void;
  */
 export type ProbeCompleteCallback = (completed: number, total: number, result: ProbeResult) => void | Promise<void>;
 
-/** When streaming in simulate mode, run one probe at a time so the UI can show 1/40, 2/40, ... line by line. */
-const SIMULATE_STREAM_BATCH_SIZE = 1;
+/** Batch size for simulate mode when onProbeComplete callback is provided (streaming). */
+const SIMULATE_STREAM_BATCH_SIZE = 10;
 
 /**
  * Run all probes (all configs × all prompts)
