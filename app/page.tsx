@@ -239,6 +239,15 @@ export default function Dashboard() {
       timeoutIdRef.current = null;
     }, timeoutMs);
     timeoutIdRef.current = timeoutId;
+
+    // Client-side progress simulation: move from 0% toward 95% over estimated time
+    const progressCap = 95;
+    const startTime = Date.now();
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(progressCap, (elapsed / timeoutMs) * progressCap);
+      setProgress(pct);
+    }, 300);
     
     try {
       const response = await fetch("/api/run-simulation", {
@@ -306,6 +315,10 @@ export default function Dashboard() {
     } catch (err) {
       // Don't show error if it was aborted by user
       if (err instanceof Error && err.name === "AbortError") {
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+          progressIntervalRef.current = null;
+        }
         setStatus("idle");
         setProgress(0);
         return;
@@ -318,6 +331,7 @@ export default function Dashboard() {
       }
       abortControllerRef.current = null;
       timeoutIdRef.current = null;
+      setProgress(0);
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
