@@ -13,11 +13,12 @@ const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ d
   ssr: false,
 });
 import { ResultsSummary } from "@/components/results-summary";
-import { Activity, Zap, Play, HelpCircle, Square } from "lucide-react";
+import { Activity, Zap, Play, HelpCircle, Download, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { exportReportAsPdf } from "@/lib/export-report";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 // Default configs matching the schema
@@ -452,6 +453,26 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Export report */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-card hover:bg-secondary border-border text-foreground hover:text-foreground transition-colors"
+                    onClick={() =>
+                      exportReportAsPdf(
+                        analysisData,
+                        comparisonsData,
+                        distributionsData,
+                        simulatedConfigA || configA,
+                        simulatedConfigB || configB
+                      )
+                    }
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export report
+                  </Button>
+                </div>
                 {/* Row 1: Results Summary */}
                 <ResultsSummary
                   analysisData={analysisData}
