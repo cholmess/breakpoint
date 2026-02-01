@@ -1,26 +1,36 @@
 "use client";
 
-import type { AnalysisData, ComparisonsData, Config } from "@/types/dashboard";
+import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 interface RecommendationBannerProps {
   analysisData: AnalysisData | null;
   comparisonsData: ComparisonsData | null;
+  distributionsData?: DistributionsData | null;
   configA: Config;
   configB: Config;
 }
 
 function confidenceLabel(confidence: number): string {
-  if (confidence >= 0.7) return "High";
-  if (confidence >= 0.5) return "Moderate";
-  return "Low";
+  if (confidence >= 0.7) return "high";
+  if (confidence >= 0.5) return "moderate";
+  return "low";
+}
+
+function formatFailureMode(mode: string): string {
+  return mode
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
 }
 
 /**
- * Detailed recommendation banner: one-sentence recommendation plus key takeaways.
+ * Recommendation banner that explains the why and what: recommends a config
+ * and explains why (evidence) and what it means (what to do).
  */
 export function RecommendationBanner({
   analysisData,
   comparisonsData,
+  distributionsData = null,
   configA,
   configB,
 }: RecommendationBannerProps) {
@@ -45,23 +55,22 @@ export function RecommendationBanner({
   const confidencePct = Math.round(confidence * 100);
 
   const hasCost = typeof configA.cost_per_1k_tokens === "number" && typeof configB.cost_per_1k_tokens === "number";
-  const costNote =
-    hasCost && saferConfig
-      ? configA.cost_per_1k_tokens !== configB.cost_per_1k_tokens
-        ? saferConfig === configA
-          ? configA.cost_per_1k_tokens < configB.cost_per_1k_tokens
-            ? " (and is cheaper)"
-            : ""
-          : configB.cost_per_1k_tokens < configA.cost_per_1k_tokens
-            ? " (and is cheaper)"
-            : ""
-        : " (same cost)"
-      : "";
+  const cheaperIsSafer =
+    hasCost &&
+    saferConfig &&
+    (saferConfig === configA ? configA.cost_per_1k_tokens < configB.cost_per_1k_tokens : configB.cost_per_1k_tokens < configA.cost_per_1k_tokens);
+  const sameCost = hasCost && configA.cost_per_1k_tokens === configB.cost_per_1k_tokens;
+
+  const byMode = distributionsData?.by_failure_mode ?? {};
+  const mostCommon = Object.values(byMode)
+    .filter((e) => e.failure_mode != null)
+    .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0];
+  const totalFailures = Object.values(byMode).reduce((sum, e) => sum + (e.count ?? 0), 0);
 
   if (!currentComparison || !configAStats || !configBStats) {
     return (
       <div className="rounded-lg border border-border bg-card px-4 py-3 text-center text-base text-muted-foreground">
-        Run a simulation to see which configuration we recommend.
+        Run a simulation to see which configuration we recommend and why.
       </div>
     );
   }
@@ -78,71 +87,69 @@ export function RecommendationBanner({
   const otherName = saferConfig === configA ? "Config B" : "Config A";
   const saferRate = saferConfig === configA ? configAStats.phat : configBStats.phat;
   const otherRate = saferConfig === configA ? configBStats.phat : configAStats.phat;
-  const totalTests =
-    ((configAStats?.n ?? 0) + (configBStats?.n ?? 0)) || (configAStats?.n ?? configBStats?.n ?? 0);
   const rateDiffPct = Math.abs((saferRate - otherRate) * 100);
+  const lowSample = configAStats.low_sample_warning || configBStats.low_sample_warning;
+
+  // Build "why" paragraphs
+  const whyParts: string[] = [];
+  whyParts.push(
+    `We recommend ${saferName} because it had a lower failure rate in this run: ${(saferRate * 100).toFixed(1)}% versus ${otherName}'s ${(otherRate * 100).toFixed(1)}%.`
+  );
+  whyParts.push(
+    `Our analysis gives a ${confidenceLabel(confidence)} confidence (${confidencePct}%) that ${saferName} is the safer choice for production.`
+  );
+  if (mostCommon && totalFailures > 0) {
+    const modeName = formatFailureMode(mostCommon.failure_mode as string);
+    whyParts.push(
+      `The most common issue in this run was ${modeName} (${mostCommon.count ?? 0} of ${totalFailures} failure events); ${saferName} handled the workload better overall.`
+    );
+  }
+  if (cheaperIsSafer) {
+    whyParts.push(`${saferName} is also cheaper per 1k tokens, so it's a better choice on both reliability and cost.`);
+  } else if (sameCost) {
+    whyParts.push("Both configs have the same cost per 1k tokens, so the recommendation is based purely on reliability.");
+  }
 
   return (
     <div className="rounded-lg border-2 border-primary/30 bg-primary/5 overflow-hidden">
-      {/* Main recommendation */}
-      <div className="px-4 py-3 text-center border-b border-border/50">
-        <p className="text-base font-medium leading-relaxed text-foreground">
-          We recommend <strong>{saferName}</strong> for production — {confidencePct}% chance it&apos;s safer.{costNote}
+      {/* What we recommend */}
+      <div className="px-4 py-3 border-b border-border/50">
+        <p className="text-base font-semibold leading-relaxed text-foreground">
+          We recommend <strong>{saferName}</strong> for production.
         </p>
       </div>
-      {/* Key details */}
-      <div className="px-4 py-3 bg-card/50">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-          <div className="rounded-md bg-muted/50 px-3 py-2">
-            <div className="text-muted-foreground font-mono uppercase tracking-wider text-xs leading-tight">
-              Failure rate comparison
-            </div>
-            <div className="mt-1 font-medium text-foreground leading-tight">
-              {saferName} {(saferRate * 100).toFixed(1)}% vs {otherName} {(otherRate * 100).toFixed(1)}%
-            </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              {rateDiffPct.toFixed(1)}% difference
-            </div>
-          </div>
-          <div className="rounded-md bg-muted/50 px-3 py-2">
-            <div className="text-muted-foreground font-mono uppercase tracking-wider text-xs leading-tight">
-              Confidence
-            </div>
-            <div className="mt-1 font-medium text-foreground leading-tight">
-              {confidenceLabel(confidence)} ({confidencePct}%)
-            </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              Statistical strength of recommendation
-            </div>
-          </div>
-          <div className="rounded-md bg-muted/50 px-3 py-2">
-            <div className="text-muted-foreground font-mono uppercase tracking-wider text-xs leading-tight">
-              Sample size
-            </div>
-            <div className="mt-1 font-medium text-foreground leading-tight">
-              {configAStats.n} + {configBStats.n} = {totalTests} tests
-            </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              Config A / Config B / total
-            </div>
-          </div>
-          <div className="rounded-md bg-muted/50 px-3 py-2">
-            <div className="text-muted-foreground font-mono uppercase tracking-wider text-xs leading-tight">
-              Failures observed
-            </div>
-            <div className="mt-1 font-medium text-foreground leading-tight">
-              {configAStats.k} + {configBStats.k} = {configAStats.k + configBStats.k} total
-            </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
-              Config A / Config B
-            </div>
-          </div>
-        </div>
-        {(configAStats.low_sample_warning || configBStats.low_sample_warning) && (
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-3 leading-relaxed">
-            With fewer than 100 tests per config, consider running a full simulation for higher confidence.
+
+      {/* Why we recommend it */}
+      <div className="px-4 py-3 bg-card/50 space-y-3">
+        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          Why we recommend {saferName}
+        </p>
+        <ul className="space-y-2 text-sm text-foreground leading-relaxed list-none">
+          {whyParts.map((text, i) => (
+            <li key={i} className="flex gap-2">
+              <span className="text-primary shrink-0 mt-0.5">•</span>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* What it means / what to do */}
+        <div className="pt-2 border-t border-border/50">
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            What this means
           </p>
-        )}
+          <p className="text-sm text-foreground leading-relaxed">
+            {lowSample ? (
+              <>
+                Use {saferName} for production if you're satisfied with this sample. For higher confidence, run a full simulation (200 prompts) before committing.
+              </>
+            ) : (
+              <>
+                Use {saferName} in production for better reliability. The {rateDiffPct.toFixed(1)}% lower failure rate and {confidencePct}% confidence support this choice.
+              </>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   );
