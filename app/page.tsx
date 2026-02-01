@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { FlipCard } from "@/components/flip-card";
 import { TrafficLight } from "@/components/traffic-light";
 import { ProbabilityCard } from "@/components/probability-card";
@@ -13,7 +13,7 @@ const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ d
   ssr: false,
 });
 import { ResultsSummary } from "@/components/results-summary";
-import { Activity, Zap, Play, HelpCircle } from "lucide-react";
+import { Activity, Zap, Play, HelpCircle, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -66,6 +66,11 @@ export default function Dashboard() {
 
   // Which API keys are set (for Real API mode warning)
   const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean } | null>(null);
+
+  // Refs to store abort controller and intervals for stopping simulation
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
   // When Real API is selected, check which keys are set
   useEffect(() => {
@@ -131,10 +136,38 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
 
+  const stopSimulation = useCallback(() => {
+    // Abort the fetch request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Clear intervals and timeouts
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = null;
+    }
+    
+    // Reset state
+    setStatus("idle");
+    setProgress(0);
+    setError("Simulation stopped by user");
+  }, []);
+
   const runSimulation = useCallback(async () => {
     setStatus("running");
     setError(null);
     setProgress(0);
+    
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     
     // Calculate estimated time and increment rate based on mode + run size
     // Quick: 20 prompts × 2 configs = 40 probes. Full: 200 × 2 = 400 probes
@@ -164,6 +197,7 @@ export default function Dashboard() {
         return prev;
       });
     }, updateIntervalMs);
+    progressIntervalRef.current = progressInterval;
     
     // Set timeout with buffer (2x estimated time: 40s for simulate, 7min for real)
     const timeoutMs = estimatedTimeMs * 2;
@@ -172,7 +206,11 @@ export default function Dashboard() {
       setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
       setStatus("idle");
       setProgress(0);
+      abortControllerRef.current = null;
+      progressIntervalRef.current = null;
+      timeoutIdRef.current = null;
     }, timeoutMs);
+    timeoutIdRef.current = timeoutId;
     
     try {
       const response = await fetch("/api/run-simulation", {
@@ -186,10 +224,14 @@ export default function Dashboard() {
           seed: 42,
           mode: runMode,
         }),
+        signal: abortController.signal,
       });
       
       clearTimeout(timeoutId);
       clearInterval(progressInterval);
+      abortControllerRef.current = null;
+      progressIntervalRef.current = null;
+      timeoutIdRef.current = null;
       setProgress(100);
 
       const data = await response.json();
@@ -206,8 +248,18 @@ export default function Dashboard() {
       setSimulatedConfigB(data.configB || configB);
       setStatus("success");
     } catch (err) {
+      // Don't show error if it was aborted by user
+      if (err instanceof Error && err.name === "AbortError") {
+        setStatus("idle");
+        setProgress(0);
+        return;
+      }
+      
       clearTimeout(timeoutId);
       clearInterval(progressInterval);
+      abortControllerRef.current = null;
+      progressIntervalRef.current = null;
+      timeoutIdRef.current = null;
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
@@ -229,7 +281,7 @@ export default function Dashboard() {
                 BreakPoint
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                AI Observability Dashboard
+                AI Observability Tool
               </p>
             </div>
           </div>
@@ -241,7 +293,7 @@ export default function Dashboard() {
                 className="text-base font-bold text-muted-foreground hover:text-foreground"
               >
                 <HelpCircle className="h-5 w-5 mr-2" />
-                Help
+                Help! 🦥
               </Button>
             </Link>
           </div>
@@ -260,17 +312,17 @@ export default function Dashboard() {
               onConfigBChange={setConfigB}
             />
             {/* Run mode: simulate (default) or real API calls */}
-            <Card className="py-3 glass-card">
-              <CardContent className="p-4">
-                <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
+            <Card className="py-1.5 glass-card">
+              <CardContent className="p-3">
+                <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-2 leading-relaxed">
                   Run Mode
                 </div>
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-2">
                   <button
                     type="button"
                     onClick={() => setRunMode("simulate")}
                     className={cn(
-                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border leading-relaxed",
                       runMode === "simulate"
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-card hover:bg-secondary border-border text-foreground"
@@ -282,7 +334,7 @@ export default function Dashboard() {
                     type="button"
                     onClick={() => setRunMode("real")}
                     className={cn(
-                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border leading-relaxed",
                       runMode === "real"
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-card hover:bg-secondary border-border text-foreground"
@@ -291,12 +343,12 @@ export default function Dashboard() {
                     Real API
                   </button>
                 </div>
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-3">
                   <button
                     type="button"
                     onClick={() => setRunSize("quick")}
                     className={cn(
-                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border leading-relaxed",
                       runSize === "quick"
                         ? "bg-primary/20 text-primary border-primary/50 dark:bg-primary/10"
                         : "bg-card hover:bg-secondary border-border text-foreground"
@@ -308,7 +360,7 @@ export default function Dashboard() {
                     type="button"
                     onClick={() => setRunSize("full")}
                     className={cn(
-                      "flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border leading-relaxed",
                       runSize === "full"
                         ? "bg-primary/20 text-primary border-primary/50 dark:bg-primary/10"
                         : "bg-card hover:bg-secondary border-border text-foreground"
@@ -318,17 +370,31 @@ export default function Dashboard() {
                   </button>
                 </div>
                 {missingKey && (
-                  <p className="text-sm text-amber-600 dark:text-amber-400 mb-3 leading-relaxed">
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mb-2 leading-relaxed">
                     Missing API key(s) for your selected configs. Copy <code className="text-xs bg-muted px-1 rounded">.env.example</code> to <code className="text-xs bg-muted px-1 rounded">.env</code> in the project root and add the keys. See SETUP.md.
                   </p>
                 )}
                 <Button
-                  onClick={runSimulation}
-                  disabled={status === "running" || Boolean(missingKey)}
-                  className="w-full bg-[#25924d] hover:bg-[#25924d]/90 text-white"
+                  onClick={status === "running" ? stopSimulation : runSimulation}
+                  disabled={Boolean(missingKey)}
+                  className={cn(
+                    "w-full text-white",
+                    status === "running"
+                      ? "bg-red-600 hover:bg-red-700"
+                      : "bg-[#25924d] hover:bg-[#25924d]/90"
+                  )}
                 >
-                  <Play className="h-3.5 w-3.5 mr-1.5" />
-                  {status === "running" ? "Running Simulation..." : "Run Simulation"}
+                  {status === "running" ? (
+                    <>
+                      <Square className="h-3.5 w-3.5 mr-1.5" />
+                      Stop Simulation
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-3.5 w-3.5 mr-1.5" />
+                      Run Simulation
+                    </>
+                  )}
                 </Button>
               </CardContent>
             </Card>
