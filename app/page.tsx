@@ -534,6 +534,7 @@ export default function Dashboard() {
                 <RecommendationBanner
                   analysisData={analysisData}
                   comparisonsData={comparisonsData}
+                  distributionsData={distributionsData}
                   configA={simulatedConfigA || configA}
                   configB={simulatedConfigB || configB}
                 />
