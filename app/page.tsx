@@ -17,14 +17,16 @@ const OrbTrail = dynamic(() => import("@/components/orb-trail").then(mod => ({ d
 import { ResultsSummary } from "@/components/results-summary";
 import { RecommendationBanner } from "@/components/recommendation-banner";
 import { BreakFirstTimeline } from "@/components/break-first-timeline";
-import { Activity, Zap, Play, HelpCircle, Download, Square, Compass } from "lucide-react";
+import { Activity, Zap, Play, HelpCircle, Download, Square, Compass, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { exportReportAsPdf } from "@/lib/export-report";
 import { startDashboardTour } from "@/lib/dashboard-tour";
-import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline } from "@/types/dashboard";
+import { saveBaseline, loadBaseline, clearBaseline } from "@/lib/baseline";
+import { BaselineComparisonBanner } from "@/components/baseline-comparison-banner";
+import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline, Baseline } from "@/types/dashboard";
 
 // Default configs matching the schema
 const defaultConfigA: Config = {
@@ -72,6 +74,17 @@ export default function Dashboard() {
   const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
   // Once configs are edited after a run, results stay hidden until the user runs again (even if they slide back)
   const [configsEditedSinceRun, setConfigsEditedSinceRun] = useState(false);
+
+  // Baseline (saved run for comparison) — load from localStorage on mount
+  const [baseline, setBaselineState] = useState<Baseline | null>(null);
+  useEffect(() => {
+    setBaselineState(loadBaseline());
+  }, []);
+
+  const setBaseline = useCallback((value: Baseline | null) => {
+    setBaselineState(value);
+    if (value === null) clearBaseline();
+  }, []);
 
   // Which API keys are set (for Real API mode warning)
   const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean } | null>(null);
@@ -524,8 +537,40 @@ export default function Dashboard() {
                   configA={simulatedConfigA || configA}
                   configB={simulatedConfigB || configB}
                 />
-                {/* Export report */}
-                <div className="flex justify-end">
+                {/* Baseline comparison banner when a baseline exists */}
+                {baseline && (
+                  <BaselineComparisonBanner
+                    current={{
+                      analysis: analysisData!,
+                      comparisons: comparisonsData!,
+                      configA: simulatedConfigA || configA,
+                      configB: simulatedConfigB || configB,
+                    }}
+                    baseline={baseline}
+                    onClearBaseline={() => setBaseline(null)}
+                  />
+                )}
+                {/* Export report & Save as baseline */}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-card hover:bg-secondary border-border text-foreground hover:text-foreground transition-colors"
+                    onClick={() => {
+                      saveBaseline({
+                        analysis: analysisData!,
+                        comparisons: comparisonsData!,
+                        distributions: distributionsData!,
+                        configA: simulatedConfigA || configA,
+                        configB: simulatedConfigB || configB,
+                        timeline: timeline ?? undefined,
+                      });
+                      setBaselineState(loadBaseline());
+                    }}
+                  >
+                    <Bookmark className="h-4 w-4 mr-2" />
+                    Save as baseline
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
