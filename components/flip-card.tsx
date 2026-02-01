@@ -53,10 +53,10 @@ export function FlipCard({
       >
         {/* Front - Config A */}
         <Card
-          className="w-full py-4 config-a-bg backdrop-blur-xl"
+          className="w-full pt-2 pb-4 config-a-bg backdrop-blur-xl"
           style={{ backfaceVisibility: "hidden" }}
         >
-          <CardContent className="p-4">
+          <CardContent className="pt-2 px-4 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-2 w-2 rounded-full bg-[#95ccf9] shadow-[0_0_8px_rgba(149,204,249,0.6)]" />
               <span className="text-base font-semibold uppercase tracking-wider text-[#95ccf9] leading-tight">
@@ -91,10 +91,10 @@ export function FlipCard({
 
         {/* Back - Config B */}
         <Card
-          className="absolute inset-0 w-full py-4 config-b-bg backdrop-blur-xl [transform:rotateY(180deg)]"
+          className="absolute inset-0 w-full pt-2 pb-4 config-b-bg backdrop-blur-xl [transform:rotateY(180deg)]"
           style={{ backfaceVisibility: "hidden" }}
         >
-          <CardContent className="p-4">
+          <CardContent className="pt-2 px-4 pb-4">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-2 w-2 rounded-full bg-[#25924d] shadow-[0_0_8px_rgba(37,146,77,0.6)]" />
               <span className="text-base font-semibold uppercase tracking-wider text-[#25924d] leading-tight">
@@ -128,8 +128,8 @@ export function FlipCard({
         </Card>
       </div>
 
-      <div className="mt-4 flex flex-col items-center gap-3">
-        <div className="flex items-center gap-3">
+      <div className="mt-3 flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => {
@@ -146,7 +146,7 @@ export function FlipCard({
             }}
             disabled={isTransitioning || !isFlipped}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors leading-tight disabled:opacity-50 disabled:cursor-not-allowed",
               !isFlipped 
                 ? "bg-[#95ccf9]/20 text-[#95ccf9] border border-[#95ccf9]/30" 
                 : "bg-border text-muted-foreground hover:bg-[#95ccf9]/10 hover:text-[#95ccf9] border border-border"
@@ -154,7 +154,7 @@ export function FlipCard({
             aria-label="Show Config A"
           >
             <div className={cn(
-              "h-2 w-2 rounded-full transition-colors",
+              "h-1.5 w-1.5 rounded-full transition-colors",
               !isFlipped ? "bg-[#95ccf9]" : "bg-muted-foreground"
             )} />
             <span>Config A</span>
@@ -175,7 +175,7 @@ export function FlipCard({
             }}
             disabled={isTransitioning || isFlipped}
             className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed",
+              "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors leading-tight disabled:opacity-50 disabled:cursor-not-allowed",
               isFlipped 
                 ? "bg-[#25924d]/20 text-[#25924d] border border-[#25924d]/30" 
                 : "bg-border text-muted-foreground hover:bg-[#25924d]/10 hover:text-[#25924d] border border-border"
@@ -183,7 +183,7 @@ export function FlipCard({
             aria-label="Show Config B"
           >
             <div className={cn(
-              "h-2 w-2 rounded-full transition-colors",
+              "h-1.5 w-1.5 rounded-full transition-colors",
               isFlipped ? "bg-[#25924d]" : "bg-muted-foreground"
             )} />
             <span>Config B</span>
