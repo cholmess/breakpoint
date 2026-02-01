@@ -169,17 +169,21 @@ export function getDefaultRules(): Rule[] {
 /**
  * Adaptive rules with dynamic thresholds based on run distribution (Option B)
  * Uses percentile-based thresholds: latency P95, cost P95
- * Flags the worst 5% as failures, adapting to actual traffic patterns
+ * Flags the worst 5% as failures, adapting to actual traffic patterns.
+ * costMultiplier: allow "2× cost" tolerance — cost rule uses costThreshold * costMultiplier (default 1).
+ * latencyMultiplier: allow "2× latency" tolerance — latency rule uses latencyThreshold * latencyMultiplier (default 1).
  */
 export function getAdaptiveRules(
   configs: Map<string, ProbeConfig>,
-  results: ProbeResult[]
+  results: ProbeResult[],
+  costMultiplier: number = 1,
+  latencyMultiplier: number = 1
 ): Rule[] {
   const thresholds = computeDynamicThresholds(results);
   
   // Use P95 as threshold, or fallback to defaults if P95 is too low
-  const latencyThreshold = Math.max(thresholds.latency_p95, 5000); // Min 5s to avoid flagging fast calls
-  const costThreshold = Math.max(thresholds.cost_p95, 0.01); // Min $0.01
+  const latencyThreshold = Math.max(thresholds.latency_p95, 5000) * latencyMultiplier; // Min 5s * mult
+  const costThreshold = Math.max(thresholds.cost_p95, 0.01) * costMultiplier; // Min $0.01 * mult
   const contextUsageThreshold = Math.max(thresholds.context_usage_p95, 0.85);
 
   return [

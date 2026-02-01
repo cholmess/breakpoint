@@ -26,7 +26,7 @@ import { exportReportAsPdf } from "@/lib/export-report";
 import { startDashboardTour } from "@/lib/dashboard-tour";
 import { saveBaseline, loadBaseline, clearBaseline } from "@/lib/baseline";
 import { BaselineComparisonBanner } from "@/components/baseline-comparison-banner";
-import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline, Baseline } from "@/types/dashboard";
+import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline, Baseline, CostBand, CostMultiplierKey, LatencyMultiplierKey } from "@/types/dashboard";
 
 // Default configs matching the schema
 const defaultConfigA: Config = {
@@ -74,6 +74,11 @@ export default function Dashboard() {
   const [simulatedConfigB, setSimulatedConfigB] = useState<Config | null>(null);
   // Once configs are edited after a run, results stay hidden until the user runs again (even if they slide back)
   const [configsEditedSinceRun, setConfigsEditedSinceRun] = useState(false);
+
+  // Cost vs reliability: precomputed bands (cost × latency tolerance) from last run
+  const [costBands, setCostBands] = useState<Record<string, CostBand> | null>(null);
+  const [costMultiplier, setCostMultiplier] = useState<CostMultiplierKey>("1");
+  const [latencyMultiplier, setLatencyMultiplier] = useState<LatencyMultiplierKey>("1");
 
   // Baseline (saved run for comparison) — load from localStorage on mount
   const [baseline, setBaselineState] = useState<Baseline | null>(null);
@@ -283,6 +288,9 @@ export default function Dashboard() {
       setComparisonsData(data.comparisons);
       setDistributionsData(data.distributions);
       setTimeline(data.timeline ?? null);
+      setCostBands(data.costBands ?? null);
+      setCostMultiplier("1");
+      setLatencyMultiplier("1");
       // Store the configs that were actually used in this simulation
       setSimulatedConfigA(data.configA || configA);
       setSimulatedConfigB(data.configB || configB);
@@ -528,13 +536,61 @@ export default function Dashboard() {
                   </div>
                 );
               }
+              const toleranceKey = `${costMultiplier}_${latencyMultiplier}`;
+              const displayAnalysisData = costBands?.[toleranceKey]?.analysis ?? analysisData;
+              const displayComparisonsData = costBands?.[toleranceKey]?.comparisons ?? comparisonsData;
+              const displayDistributionsData = costBands?.[toleranceKey]?.distributions ?? distributionsData;
+
               return (
               <div className="space-y-4">
+                {/* Cost & latency tolerance (only when bands from last run exist) */}
+                {costBands && (
+                  <div className="space-y-2 rounded-lg border border-border/30 bg-muted/10 px-3 py-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground">Cost tolerance:</span>
+                      {(["1", "2", "3"] as const).map((mult) => (
+                        <button
+                          key={mult}
+                          type="button"
+                          onClick={() => setCostMultiplier(mult)}
+                          className={cn(
+                            "px-2.5 py-1 rounded text-sm font-medium transition-colors border",
+                            costMultiplier === mult
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-card hover:bg-secondary border-border text-foreground"
+                          )}
+                        >
+                          {mult}×
+                        </button>
+                      ))}
+                      <span className="text-xs text-muted-foreground">Fewer cost_runaway at higher ×.</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground">Latency tolerance:</span>
+                      {(["1", "2"] as const).map((mult) => (
+                        <button
+                          key={mult}
+                          type="button"
+                          onClick={() => setLatencyMultiplier(mult)}
+                          className={cn(
+                            "px-2.5 py-1 rounded text-sm font-medium transition-colors border",
+                            latencyMultiplier === mult
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-card hover:bg-secondary border-border text-foreground"
+                          )}
+                        >
+                          {mult}×
+                        </button>
+                      ))}
+                      <span className="text-xs text-muted-foreground">Fewer latency_breach at higher ×.</span>
+                    </div>
+                  </div>
+                )}
                 {/* One-sentence recommendation */}
                 <RecommendationBanner
-                  analysisData={analysisData}
-                  comparisonsData={comparisonsData}
-                  distributionsData={distributionsData}
+                  analysisData={displayAnalysisData}
+                  comparisonsData={displayComparisonsData}
+                  distributionsData={displayDistributionsData}
                   configA={simulatedConfigA || configA}
                   configB={simulatedConfigB || configB}
                 />
@@ -542,8 +598,8 @@ export default function Dashboard() {
                 {baseline && (
                   <BaselineComparisonBanner
                     current={{
-                      analysis: analysisData!,
-                      comparisons: comparisonsData!,
+                      analysis: displayAnalysisData!,
+                      comparisons: displayComparisonsData!,
                       configA: simulatedConfigA || configA,
                       configB: simulatedConfigB || configB,
                     }}
@@ -559,9 +615,9 @@ export default function Dashboard() {
                     className="bg-card hover:bg-secondary border-border text-foreground hover:text-foreground transition-colors"
                     onClick={() => {
                       saveBaseline({
-                        analysis: analysisData!,
-                        comparisons: comparisonsData!,
-                        distributions: distributionsData!,
+                        analysis: displayAnalysisData!,
+                        comparisons: displayComparisonsData!,
+                        distributions: displayDistributionsData!,
                         configA: simulatedConfigA || configA,
                         configB: simulatedConfigB || configB,
                         timeline: timeline ?? undefined,
@@ -578,9 +634,9 @@ export default function Dashboard() {
                     className="bg-card hover:bg-secondary border-border text-foreground hover:text-foreground transition-colors"
                     onClick={() =>
                       exportReportAsPdf(
-                        analysisData,
-                        comparisonsData,
-                        distributionsData,
+                        displayAnalysisData,
+                        displayComparisonsData,
+                        displayDistributionsData,
                         simulatedConfigA || configA,
                         simulatedConfigB || configB
                       )
@@ -592,9 +648,9 @@ export default function Dashboard() {
                 </div>
                 {/* Row 1: Results Summary */}
                 <ResultsSummary
-                  analysisData={analysisData}
-                  comparisonsData={comparisonsData}
-                  distributionsData={distributionsData}
+                  analysisData={displayAnalysisData}
+                  comparisonsData={displayComparisonsData}
+                  distributionsData={displayDistributionsData}
                   configA={simulatedConfigA || configA}
                   configB={simulatedConfigB || configB}
                 />
@@ -602,13 +658,13 @@ export default function Dashboard() {
                 {/* Row 2: Probability Card and Confidence Band side by side */}
                 <div className="grid grid-cols-2 gap-4">
                   <ProbabilityCard
-                    comparisons={comparisonsData?.comparisons || []}
+                    comparisons={displayComparisonsData?.comparisons || []}
                     selectedConfigA={(simulatedConfigA || configA).id}
                     selectedConfigB={(simulatedConfigB || configB).id}
                     isRunning={false}
                   />
-                  {analysisData && (
-                    <ConfidenceBand analysisData={analysisData} />
+                  {displayAnalysisData && (
+                    <ConfidenceBand analysisData={displayAnalysisData} />
                   )}
                 </div>
 
@@ -621,25 +677,25 @@ export default function Dashboard() {
                 
                 {/* Row 3: Failure Mode Distribution */}
                 <DistributionCharts
-                  byFailureMode={distributionsData?.by_failure_mode || {}}
-                  byPromptFamily={distributionsData?.by_prompt_family || {}}
+                  byFailureMode={displayDistributionsData?.by_failure_mode || {}}
+                  byPromptFamily={displayDistributionsData?.by_prompt_family || {}}
                   type="failure-mode"
                 />
                 
                 {/* Row 4: Prompt Family Distribution */}
                 <DistributionCharts
-                  byFailureMode={distributionsData?.by_failure_mode || {}}
-                  byPromptFamily={distributionsData?.by_prompt_family || {}}
+                  byFailureMode={displayDistributionsData?.by_failure_mode || {}}
+                  byPromptFamily={displayDistributionsData?.by_prompt_family || {}}
                   type="prompt-family"
                 />
                 
                 <FailureBreakdown 
-                  byFailureMode={distributionsData?.by_failure_mode || {}}
+                  byFailureMode={displayDistributionsData?.by_failure_mode || {}}
                 />
                 
                 {/* Failure Hotspot Matrix */}
                 <FailureHotspotMatrix 
-                  hotspotMatrix={distributionsData?.hotspot_matrix || []}
+                  hotspotMatrix={displayDistributionsData?.hotspot_matrix || []}
                 />
               </div>
             ); })()}

@@ -91,6 +91,16 @@ export interface Timeline {
   break_points: BreakPoint[];
 }
 
+/** Cost-adjusted view: same configs, different cost tolerance (1×, 1.5×, 2×, 2.5×, 3×). */
+export interface CostBand {
+  analysis: AnalysisData;
+  comparisons: ComparisonsData;
+  distributions: DistributionsData;
+}
+
+export type CostMultiplierKey = "1" | "2" | "3";
+export type LatencyMultiplierKey = "1" | "2";
+
 /** Snapshot of a run saved as baseline (localStorage). */
 export interface Baseline {
   analysis: AnalysisData;
