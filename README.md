@@ -1,178 +1,124 @@
-# Probabilistic Failure Simulator
+# BreakPoint
 
-A hackathon project for simulating and detecting LLM configuration failures through deterministic rules and probabilistic analysis.
+**Compare LLM configurations for production reliability.** Run A/B probes, detect failure modes (latency, cost, context, retrieval), and get a probabilistic recommendation for which config is safer—with simulated telemetry or real API calls.
 
-## Person A: Runner + Rules Engineer
+---
 
-This component implements the probe runner, telemetry logging, and deterministic rules engine.
+## For Judges
 
-### Components
-
-- **Probe Runner** (`src/lib/probe-runner.ts`): Executes probes against configurations and generates telemetry
-- **Telemetry Logger** (`src/lib/telemetry-logger.ts`): Logs probe telemetry to `output/telemetry.log`
-- **Rules Engine** (`src/lib/rules-engine.ts`): Evaluates deterministic rules to detect failures
-- **Timeline Builder** (`src/lib/timeline.ts`): Builds break-first timeline from failure events
-
-### Usage
-
-#### Quick Start (Simulation Mode)
-
-Run the probe pipeline with simulated telemetry:
+### Run it in 2 minutes
 
 ```bash
-npm run probes -- --mode simulate
+npm install
+npm run dev
 ```
 
-#### Real API Mode
+Open **http://localhost:3000**.
 
-To use real Google Gemini API calls:
+### What to try
 
-1. Create a `.env` file with your API key:
-   ```bash
-   cp .env.example .env
-   # Edit .env and add: GEMINI_API_KEY=your_key_here
-   ```
+1. **Simulate (default)** — Click **Run**. No API keys needed. You’ll see failure rates, confidence bands, and a recommendation (e.g. “Config A is significantly more reliable”).
+2. **Real API** — Switch to **Real API**, add `OPENAI_API_KEY` (and optionally `GEMINI_API_KEY`) to `.env`, then **Run**. Both configs call real models; failure rates reflect actual latency, cost, and token usage.
+3. **Cost & latency tolerance** — After a run, use the **Cost ×** and **Latency ×** toggles to see how the recommendation changes with looser thresholds.
 
-2. Run with real API calls:
-   ```bash
-   npm run probes -- --mode real
-   ```
+### What we’re demonstrating
 
-**See [README_API_INTEGRATION.md](./README_API_INTEGRATION.md) for detailed API setup and usage.**
+- **Probabilistic A/B comparison** — “P(Config A safer than B)” with confidence intervals, not just point estimates.
+- **Six failure modes** — Context overflow, silent truncation, latency breach, cost runaway, tool timeout, retrieval noise. Rules are deterministic; analysis is Bayesian/bootstrap.
+- **Real + simulate** — Same dashboard and rules for synthetic telemetry (fast, free) and real OpenAI/Gemini calls (realistic stress test).
+- **Production recommendation** — Clear “We recommend Config A for production” with reasoning (failure rate, confidence, most common issues).
 
-#### Pipeline Steps
+### Tech stack
 
-The pipeline will:
-1. Load configurations from `configs/*.json`
-2. Load prompts from `data/prompts/prompt-suite.json`
-3. Run all probes (configs × prompts)
-   - **Simulate mode**: Generate synthetic telemetry
-   - **Real mode**: Call Gemini API and measure actual tokens/latency
-4. Evaluate rules and detect failures
-5. Build break-first timeline
-6. Write outputs to `output/`:
-   - `telemetry.log` - JSONL of all probe telemetry
-   - `failure-events.json` - Array of failure events
-   - `break-first-timeline.json` - Timeline showing when each config breaks
+Next.js 16, React 19, TypeScript. Probe runner + rules engine (Node); analysis (probability, statistics); dashboard (Recharts, Tailwind). APIs: OpenAI, Google Gemini, Manus (optional).
 
-### Failure Modes Detected
+---
 
-1. **Context Overflow** (HIGH): tokens_in > context_window
-2. **Silent Truncation Risk** (MED): context_usage > 0.85
-3. **Latency Breach** (MED/HIGH): latency_ms > 15000ms (15 seconds)
-4. **Cost Runaway** (HIGH): estimated_cost exceeds threshold
-5. **Tool Timeout Risk** (HIGH): tool_calls > 0 && timeouts > 0
-6. **Retrieval Noise Risk** (MED): top_k > 8
+## Project structure
 
-### Configuration
+| Layer | Responsibility |
+|-------|-----------------|
+| **Probe runner** | Run prompts × configs; simulate or call LLM APIs; collect telemetry |
+| **Rules engine** | Evaluate SLOs (latency, cost, context, retrieval, tools); emit failure events |
+| **Analysis** | Per-config failure rate (phat), 95% CIs, P(A safer than B), distributions by failure mode & prompt family |
+| **Dashboard** | Config comparison, probability cards, confidence bands, failure breakdown, timeline, PDF export |
 
-Sample configurations are in `configs/`:
-- `config-a.json`: top_k=10, context_window=8192, tools=true
-- `config-b.json`: top_k=4, context_window=16384, tools=false
+### Quick commands
 
-### Prompt Suite
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dashboard at http://localhost:3000 |
+| `npm run probes -- --mode simulate` | Run probes with synthetic telemetry (CLI) |
+| `npm run probes -- --mode real` | Run probes with real API calls (CLI) |
+| `npm run analyze` | Compute analysis from `output/failure-events.json` |
+| `npm run test` | Run statistics/edge-case tests |
 
-50 synthetic prompts across 4 families:
-- `short`: Quick Q&A prompts
-- `long_context`: Legal, research, document analysis
-- `tool_heavy`: Data analysis and automation tasks
-- `doc_grounded`: Q&A with context requirements
+---
 
-### Command Line Options
+## Setup (detailed)
+
+### 1. Install and run the dashboard
 
 ```bash
-# Simulation mode (fast, free, reproducible)
-npm run probes -- --mode simulate
-
-# Real API mode (accurate, costs apply)
-npm run probes -- --mode real
-
-# Custom seed for simulation
-npm run probes -- --seed 123
-
-# Combine options
-npm run probes -- --mode simulate --seed 42
+npm install
+npm run dev
 ```
 
-### Modes
+Then open http://localhost:3000. The dashboard can load pre-generated analysis or run a **simulation** from the UI (no keys required).
 
-**Simulate Mode** (default):
-- ✅ Fast execution (processes 100s of prompts in seconds)
-- ✅ No API costs
-- ✅ Deterministic/reproducible with seed
-- ❌ Synthetic telemetry (not real model behavior)
+### 2. Real API mode (optional)
 
-**Real API Mode**:
-- ✅ Actual Gemini API calls
-- ✅ Real token counts and latency measurements
-- ✅ Accurate risk analysis based on real model behavior
-- ⚠️ API costs apply
-- ⚠️ Rate limited (5 concurrent, 200ms delays)
-
-## Person B: Probability & Analytics
-
-This component computes per-config failure probabilities, confidence intervals, pairwise “safer than” probabilities, and distributions by failure mode and prompt family.
-
-### Usage
+For real OpenAI and/or Gemini calls:
 
 ```bash
-npm run analyze
+cp .env.example .env
+# Edit .env:
+# OPENAI_API_KEY=sk-...
+# GEMINI_API_KEY=...   # optional
 ```
 
-Reads `output/failure-events.json` (or `tests/fixtures/failure-events.json`) and `data/prompts/prompt-suite.json`, and writes to `output/`:
+In the UI, switch to **Real API** and click **Run**. Configs use the model names you set (e.g. `gpt-4`, `gpt-4o`, `gemini-1.5-flash`). Newer OpenAI models (o1, gpt-5.x) use `max_completion_tokens` automatically.
 
-- **analysis.json** – Per-config stats (phat, bootstrap/Bayesian 95% CIs)
-- **comparisons.json** – Pairwise P(A safer than B)
-- **distributions.json** – Counts and proportions by failure mode and by prompt family
+See [README_API_INTEGRATION.md](./README_API_INTEGRATION.md) and [SETUP.md](./SETUP.md) for more.
 
-**Person C (Frontend):** See **[docs/JSON_SCHEMAS.md](./docs/JSON_SCHEMAS.md)** for exact field names, types, and examples for dashboard, confidence bands, and distribution charts.
+---
 
-## Person C: Frontend Dashboard
+## Failure modes detected
 
-The front-end dashboard provides a visual interface for viewing analysis results, comparing configurations, and exploring failure patterns.
+| Mode | Severity | Rule (simplified) |
+|------|----------|-------------------|
+| Context overflow | HIGH | tokens_in > context_window |
+| Silent truncation risk | MED | context_usage > 85% |
+| Latency breach | MED/HIGH | latency_ms > 4.5s (configurable) |
+| Cost runaway | HIGH | estimated_cost > threshold per probe |
+| Tool timeout risk | HIGH | tool_calls > 0 and timeouts > 0 |
+| Retrieval noise risk | MED | top_k > 6 or high retrieved-token ratio |
 
-### Quick Setup
+Thresholds are fixed for latency (so real API isn’t overfocused on latency); cost and context use adaptive (P95) or fixed SLOs depending on mode.
 
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+---
 
-2. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
+## Configs and prompts
 
-3. **Open in browser:**
-   Navigate to http://localhost:3000
+- **Configs**: Two configs (A vs B) with model, context window, top_k, chunk size, tools, temperature, cost. Edit in UI or via `configs/*.json`.
+- **Prompts**: Loaded from `data/prompts/prompt-suite.json` (or custom prompts in “Real use case” mode). Families: short/long, plain / doc grounded / tool heavy.
 
-**See [SETUP.md](./SETUP.md) for detailed setup instructions and troubleshooting.**
+---
 
-### Features
+## Person A: Runner + Rules
 
-- **Configuration Comparison**: Compare two LLM configurations side-by-side
-- **Probability Analysis**: View pairwise "safer than" probabilities
-- **Confidence Intervals**: Visualize failure rates with 95% confidence bands
-- **Distribution Charts**: Explore failure modes and prompt family distributions
-- **Failure Breakdown**: Detailed view of failure events by mode and severity
+- **Probe runner** (`src/lib/probe-runner.ts`): Runs probes, simulate or real API, rate limiting.
+- **Rules engine** (`src/lib/rules-engine.ts`): Default and adaptive rules, latency/cost/context thresholds.
+- **Timeline** (`src/lib/timeline.ts`): Break-first timeline from failure events.
 
-### Data Flow
+## Person B: Probability & analytics
 
-The dashboard automatically loads data from:
-- `/api/analysis` → `output/analysis.json`
-- `/api/comparisons` → `output/comparisons.json`
-- `/api/distributions` → `output/distributions.json`
+- **Analysis** (`src/lib/analysis.ts`): Failure rate (phat), bootstrap/Bayesian CIs, pairwise comparisons, distributions.
+- **Statistics** (`src/lib/statistics.ts`): Wilson score, beta CI, config comparison.
 
-To generate fresh data, run:
-```bash
-npm run analyze
-```
+## Person C: Frontend
 
-### Next Steps
+- **Dashboard** (`app/page.tsx`): Run control (Simulate / Real API), config flip cards, results summary, recommendation banner, probability cards, confidence band, failure breakdown, hotspot matrix, timeline, cost/latency bands, PDF export.
+- **APIs**: `POST /api/run-simulation` runs the full pipeline (probes + rules + analysis) and returns analysis, comparisons, distributions, timeline.
 
-To make this useful for the hackathon:
-
-1. **Replace generic prompts** with domain-specific ones for your use case
-2. **Use real API mode** to get actual telemetry from Gemini
-3. **Analyze failure patterns** to identify which configs are safer
-4. **Export risk analysis** to dashboard (Person C) and probability layer (Person B)
+See [docs/JSON_SCHEMAS.md](./docs/JSON_SCHEMAS.md) for schemas used by the dashboard.
