@@ -47,10 +47,14 @@ export function ResultsSummary({
     ? Object.values(distributionsData.by_failure_mode).reduce((sum, entry) => sum + (entry.count || 0), 0)
     : 0;
 
-  // Get most common failure mode
-  const mostCommonFailure = distributionsData?.by_failure_mode
-    ? Object.values(distributionsData.by_failure_mode).sort((a, b) => (b.count || 0) - (a.count || 0))[0]
-    : null;
+  // Get most common failure mode(s) — check for ties
+  const sortedFailures = distributionsData?.by_failure_mode
+    ? Object.values(distributionsData.by_failure_mode).sort((a, b) => (b.count || 0) - (a.count || 0))
+    : [];
+  const mostCommonFailure = sortedFailures[0] || null;
+  const maxCount = mostCommonFailure?.count ?? 0;
+  const tiedForMostCommon = sortedFailures.filter((e) => e.count === maxCount);
+  const isFailureModeTied = tiedForMostCommon.length > 1;
 
   // Generate simple summary
   const getSummary = (): string => {
@@ -110,14 +114,23 @@ export function ResultsSummary({
     }
 
     if (mostCommonFailure && mostCommonFailure.failure_mode) {
-      const modeName = getFailureModeLabel(mostCommonFailure.failure_mode as string);
-      reasons.push(
-        t("reason_most_common_issue", {
-          modeName,
-          count: String(mostCommonFailure.count || 0),
-          total: String(totalFailures),
-        })
-      );
+      if (isFailureModeTied) {
+        // Multiple failure modes tied for most common
+        const tiedNames = tiedForMostCommon.map((e) => getFailureModeLabel(e.failure_mode as string)).join(", ");
+        reasons.push(
+          `Issues were evenly distributed: ${tiedNames} each occurred ${maxCount} times (${((maxCount / totalFailures) * 100).toFixed(1)}% each).`
+        );
+      } else {
+        // Single most common failure mode
+        const modeName = getFailureModeLabel(mostCommonFailure.failure_mode as string);
+        reasons.push(
+          t("reason_most_common_issue", {
+            modeName,
+            count: String(mostCommonFailure.count || 0),
+            total: String(totalFailures),
+          })
+        );
+      }
     }
 
     if (totalFailures > 0) {

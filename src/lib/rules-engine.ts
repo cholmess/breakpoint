@@ -12,11 +12,11 @@ import type {
   ProbeConfig,
 } from "../types";
 
-// Default thresholds for rules (used when adaptive thresholds aren't available)
-const LATENCY_SLO_MS = 15000; // 15 seconds - realistic for real LLM APIs (GPT-4, RAG, tools)
+// Default thresholds for rules (tuned to catch failures in both simulation and real API)
+const LATENCY_SLO_MS = 4500; // 4.5 seconds - balanced so latency doesn't dominate
 const COST_THRESHOLD_DAILY = 100; // $100 per day (assuming ~1000 probes/day)
-const COST_THRESHOLD_PER_PROBE = COST_THRESHOLD_DAILY / 1000; // $0.10 per probe
-const RETRIEVAL_NOISE_THRESHOLD = 8; // top_k > 8 considered noisy
+const COST_THRESHOLD_PER_PROBE = 0.025; // $0.025 per probe - sensitive for demo
+const RETRIEVAL_NOISE_THRESHOLD = 6; // top_k > 6 considered noisy (lowered from 8)
 
 /**
  * Compute percentile from sorted array
@@ -168,25 +168,25 @@ export function getDefaultRules(): Rule[] {
 
 /**
  * Adaptive rules with dynamic thresholds based on run distribution (Option B)
- * Uses percentile-based thresholds: latency P95, cost P95
- * Flags the worst 5% as failures, adapting to actual traffic patterns.
+ * Cost/context use P95; latency uses fixed SLO so latency_breach doesn't dominate.
  * costMultiplier: allow "2× cost" tolerance — cost rule uses costThreshold * costMultiplier (default 1).
- * latencyMultiplier: allow "2× latency" tolerance — latency rule uses latencyThreshold * latencyMultiplier (default 1).
+ * latencyMultiplier: allow "2× latency" tolerance — latency rule uses fixed SLO * latencyMultiplier (default 1).
+ * mode: "real" uses tighter cost SLO; latency uses the same fixed SLO in both modes so real API runs are not overfocused on latency breaches.
  */
 export function getAdaptiveRules(
   configs: Map<string, ProbeConfig>,
   results: ProbeResult[],
   costMultiplier: number = 1,
-  latencyMultiplier: number = 1
+  latencyMultiplier: number = 1,
+  mode: "simulate" | "real" = "simulate"
 ): Rule[] {
-  // #region agent log
-  console.log('[DEBUG getAdaptiveRules]', {configMapKeys:[...configs.keys()],configBExists:configs.has('config-b'),configBId:configs.get('config-b')?.id});
-  // #endregion
   const thresholds = computeDynamicThresholds(results);
-  
-  // Use P95 as threshold, or fallback to defaults if P95 is too low
-  const latencyThreshold = Math.max(thresholds.latency_p95, 5000) * latencyMultiplier; // Min 5s * mult
-  const costThreshold = Math.max(thresholds.cost_p95, 0.01) * costMultiplier; // Min $0.01 * mult
+
+  // Use fixed SLO for latency in both modes so latency_breach doesn't dominate (real API was overfocused when we used P95 of the run).
+  const latencyThreshold = LATENCY_SLO_MS * latencyMultiplier;
+  const costSloPerProbe = mode === "real" ? 0.015 : COST_THRESHOLD_PER_PROBE;
+
+  const costThreshold = costSloPerProbe * costMultiplier;
   const contextUsageThreshold = Math.max(thresholds.context_usage_p95, 0.85);
 
   return [
@@ -240,10 +240,10 @@ export function getAdaptiveRules(
         result.telemetry.latency_ms > latencyThreshold * 2 ? "HIGH" : "MED",
       mode: "latency_breach",
       breaksAt: (result: ProbeResult) =>
-        `latency_ms > P95 (${result.telemetry.latency_ms}ms > ${latencyThreshold.toFixed(0)}ms)`,
+        `latency_ms > ${latencyThreshold.toFixed(0)}ms SLO (current: ${result.telemetry.latency_ms}ms)`,
       getSignal: (result: ProbeResult) => ({
         latency_ms: result.telemetry.latency_ms,
-        p95_threshold: latencyThreshold,
+        latency_slo_ms: latencyThreshold,
       }),
     },
     {
@@ -254,10 +254,10 @@ export function getAdaptiveRules(
       severity: "HIGH",
       mode: "cost_runaway",
       breaksAt: (result: ProbeResult) =>
-        `estimated_cost > P95 (current: $${result.estimated_cost.toFixed(4)} > $${costThreshold.toFixed(4)})`,
+        `estimated_cost > $${costThreshold.toFixed(4)} SLO (current: $${result.estimated_cost.toFixed(4)})`,
       getSignal: (result: ProbeResult) => ({
         cost: result.estimated_cost,
-        p95_threshold: costThreshold,
+        cost_slo: costThreshold,
       }),
     },
     {
@@ -284,12 +284,18 @@ export function getAdaptiveRules(
         const config = configs.get(result.config_id);
         if (!config) return false;
         const usedRetrieval = result.telemetry.retrieved_tokens > 0;
-        return usedRetrieval && config.top_k > RETRIEVAL_NOISE_THRESHOLD;
+        // Also flag if retrieved tokens are excessive (>3000) even with low top_k
+        const excessiveRetrieval = result.telemetry.retrieved_tokens > 3000;
+        return usedRetrieval && (config.top_k > RETRIEVAL_NOISE_THRESHOLD || excessiveRetrieval);
       },
-      severity: "MED",
+      severity: "LOW",
       mode: "retrieval_noise_risk",
       breaksAt: (result: ProbeResult) => {
         const config = configs.get(result.config_id);
+        const excessive = result.telemetry.retrieved_tokens > 3000;
+        if (excessive) {
+          return `retrieved_tokens > 3000 (current: ${result.telemetry.retrieved_tokens})`;
+        }
         return `top_k > ${RETRIEVAL_NOISE_THRESHOLD} (current: ${config?.top_k || "?"})`;
       },
       getSignal: (result: ProbeResult) => {
@@ -297,6 +303,7 @@ export function getAdaptiveRules(
         return {
           top_k: config?.top_k || 0,
           chunk_size: config?.chunk_size || 0,
+          retrieved_tokens: result.telemetry.retrieved_tokens,
         };
       },
     },
@@ -427,16 +434,10 @@ export function evaluateRules(
   result: ProbeResult,
   rules: Rule[]
 ): FailureEvent[] {
-  // #region agent log
-  if (result.config_id === 'config-b') { console.log('[DEBUG evaluateRules]', {config_id:result.config_id,prompt_id:result.prompt_id,latency:result.telemetry.latency_ms,cost:result.estimated_cost,context_usage:result.context_usage}); }
-  // #endregion
   const events: FailureEvent[] = [];
-  
+
   for (const rule of rules) {
-    // #region agent log
-    const condResult = rule.condition(result); if (result.config_id === 'config-b') { console.log('[DEBUG rule]', {config_id:result.config_id,rule_id:rule.id,rule_name:rule.name,condition_result:condResult}); }
-    // #endregion
-    if (condResult) {
+    if (rule.condition(result)) {
       // Handle severity as either a constant or a function
       const severity =
         typeof rule.severity === "function"

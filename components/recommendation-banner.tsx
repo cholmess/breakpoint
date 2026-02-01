@@ -51,9 +51,13 @@ export function RecommendationBanner({
   const sameCost = hasCost && configA.cost_per_1k_tokens === configB.cost_per_1k_tokens;
 
   const byMode = distributionsData?.by_failure_mode ?? {};
-  const mostCommon = Object.values(byMode)
+  const sorted = Object.values(byMode)
     .filter((e) => e.failure_mode != null)
-    .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0];
+    .sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
+  const mostCommon = sorted[0];
+  const maxCount = mostCommon?.count ?? 0;
+  const tiedForFirst = sorted.filter((e) => e.count === maxCount);
+  const isTied = tiedForFirst.length > 1;
   const totalFailures = Object.values(byMode).reduce((sum, e) => sum + (e.count ?? 0), 0);
 
   if (!currentComparison || !configAStats || !configBStats) {
@@ -91,10 +95,19 @@ export function RecommendationBanner({
     `Our analysis gives a ${t(confidenceLabelKey)} confidence (${confidencePct}%) that ${saferName} is the safer choice for production.`
   );
   if (mostCommon && totalFailures > 0) {
-    const modeName = getFailureModeLabel(mostCommon.failure_mode as string);
-    whyParts.push(
-      `The most common issue in this run was ${modeName} (${mostCommon.count ?? 0} of ${totalFailures} failure events); ${saferName} handled the workload better overall.`
-    );
+    if (isTied) {
+      // Multiple failure modes tied for most common
+      const tiedNames = tiedForFirst.map((e) => getFailureModeLabel(e.failure_mode as string)).join(", ");
+      whyParts.push(
+        `Issues were evenly distributed across ${tiedForFirst.length} failure modes (${tiedNames}), each with ${maxCount} events; ${saferName} handled the workload better overall.`
+      );
+    } else {
+      // Single most common failure mode
+      const modeName = getFailureModeLabel(mostCommon.failure_mode as string);
+      whyParts.push(
+        `The most common issue in this run was ${modeName} (${mostCommon.count ?? 0} of ${totalFailures} failure events); ${saferName} handled the workload better overall.`
+      );
+    }
   }
   if (cheaperIsSafer) {
     whyParts.push(`${saferName} ${t("cheaper_per_1k")}`);
