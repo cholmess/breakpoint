@@ -2,6 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { JetBrains_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { PlainLanguageProvider } from '@/lib/plain-language-context'
 import './globals.css'
 
 const jetbrainsMono = JetBrains_Mono({ 
@@ -46,8 +47,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${jetbrainsMono.variable} font-mono antialiased`}>
-        {children}
-        <Analytics />
+        <PlainLanguageProvider>
+          {children}
+          <Analytics />
+        </PlainLanguageProvider>
       </body>
     </html>
   )

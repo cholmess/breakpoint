@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lightbulb, AlertCircle, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useText } from "@/hooks/use-text";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 interface ResultsSummaryProps {
@@ -20,6 +20,7 @@ export function ResultsSummary({
   configA,
   configB,
 }: ResultsSummaryProps) {
+  const { t, getFailureModeLabel } = useText();
   // Find the comparison for the selected configs
   const currentComparison = comparisonsData?.comparisons.find(
     (c) =>
@@ -54,24 +55,39 @@ export function ResultsSummary({
   // Generate simple summary
   const getSummary = (): string => {
     if (!currentComparison || !configAStats || !configBStats) {
-      return "Run a simulation to see which configuration performs better.";
+      return t("run_simulation_to_see");
     }
 
     if (pValue === 0.5) {
-      return "Both configurations show similar failure rates. Consider other factors like cost or latency.";
+      return t("both_similar_failure_rates");
     }
 
-    const saferName = saferConfig === configA ? "Config A" : "Config B";
-    const otherName = saferConfig === configA ? "Config B" : "Config A";
-    const saferRate = saferConfig === configA ? configAStats.phat : configBStats.phat;
-    const otherRate = saferConfig === configA ? configBStats.phat : configAStats.phat;
+    const saferName = saferConfig === configA ? t("config_a") : t("config_b");
+    const otherName = saferConfig === configA ? t("config_b") : t("config_a");
+    const saferRatePct = (saferConfig === configA ? configAStats.phat : configBStats.phat) * 100;
+    const otherRatePct = (saferConfig === configA ? configBStats.phat : configAStats.phat) * 100;
+    const saferRateStr = saferRatePct.toFixed(1);
+    const otherRateStr = otherRatePct.toFixed(1);
 
     if (confidence > 0.7) {
-      return `${saferName} is significantly more reliable, with ${(saferRate * 100).toFixed(1)}% failure rate compared to ${otherName}'s ${(otherRate * 100).toFixed(1)}%.`;
+      return t("summary_significantly_more_reliable", {
+        saferName,
+        otherName,
+        saferRate: saferRateStr,
+        otherRate: otherRateStr,
+      });
     } else if (confidence > 0.5) {
-      return `${saferName} appears more reliable (${(saferRate * 100).toFixed(1)}% vs ${(otherRate * 100).toFixed(1)}% failure rate), though the difference is moderate.`;
+      return t("summary_appears_more_reliable", {
+        saferName,
+        saferRate: saferRateStr,
+        otherRate: otherRateStr,
+      });
     } else {
-      return `The configurations are quite similar. ${saferName} has a slightly lower failure rate (${(saferRate * 100).toFixed(1)}% vs ${(otherRate * 100).toFixed(1)}%).`;
+      return t("summary_quite_similar", {
+        saferName,
+        saferRate: saferRateStr,
+        otherRate: otherRateStr,
+      });
     }
   };
 
@@ -80,64 +96,54 @@ export function ResultsSummary({
     const reasons: string[] = [];
 
     if (!configAStats || !configBStats) {
-      return ["No analysis data available yet."];
+      return [t("no_analysis_data_yet")];
     }
 
-    // Compare failure rates
     const rateDiff = Math.abs((configAStats.phat - configBStats.phat) * 100);
     if (rateDiff > 5) {
-      reasons.push(
-        `There's a ${rateDiff.toFixed(1)}% difference in failure rates between the two configurations.`
-      );
+      reasons.push(t("reason_rate_difference", { rateDiff: rateDiff.toFixed(1) }));
     }
 
-    // Low sample / uncertain estimate (Problem 1 - Emil)
     const lowSample = configAStats.low_sample_warning || configBStats.low_sample_warning;
     if (lowSample) {
-      reasons.push(
-        "With fewer than 100 tests, low failure rates may not be statistically significant. Consider running more prompts for higher confidence."
-      );
+      reasons.push(t("reason_low_sample"));
     }
 
-    // Mention most common failure
     if (mostCommonFailure && mostCommonFailure.failure_mode) {
-      const modeName = (mostCommonFailure.failure_mode as string)
-        .split("_")
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(" ");
+      const modeName = getFailureModeLabel(mostCommonFailure.failure_mode as string);
       reasons.push(
-        `The most common issue detected is ${modeName}, affecting ${mostCommonFailure.count || 0} out of ${totalFailures} failure events.`
+        t("reason_most_common_issue", {
+          modeName,
+          count: String(mostCommonFailure.count || 0),
+          total: String(totalFailures),
+        })
       );
     }
 
-    // Mention total failures
     if (totalFailures > 0) {
       const totalTrials = configAStats.n || configBStats.n || 0;
       const overallRate = totalTrials > 0 ? ((totalFailures / totalTrials) * 100).toFixed(1) : "0";
-      reasons.push(`Overall, ${overallRate}% of test runs encountered at least one failure.`);
+      reasons.push(t("reason_overall_rate", { rate: overallRate }));
     } else {
-      reasons.push("No failures were detected in this simulation - both configurations performed well!");
+      reasons.push(t("reason_no_failures"));
     }
 
-    // Configuration differences
     const differences: string[] = [];
     if (configA.context_window !== configB.context_window) {
-      differences.push(`context window (${configA.context_window} vs ${configB.context_window} tokens)`);
+      differences.push(`${t("label_context_window")} (${configA.context_window} vs ${configB.context_window})`);
     }
     if (configA.tools_enabled !== configB.tools_enabled) {
-      differences.push(`tools ${configA.tools_enabled ? "enabled" : "disabled"} vs ${configB.tools_enabled ? "enabled" : "disabled"}`);
+      differences.push(`${t("label_tools")} ${configA.tools_enabled ? t("tools_enabled") : t("tools_disabled")} vs ${configB.tools_enabled ? t("tools_enabled") : t("tools_disabled")}`);
     }
     if (configA.top_k !== configB.top_k) {
-      differences.push(`top-k retrieval (${configA.top_k} vs ${configB.top_k})`);
+      differences.push(`${t("label_top_k")} (${configA.top_k} vs ${configB.top_k})`);
     }
 
     if (differences.length > 0) {
-      reasons.push(
-        `Key differences between configurations: ${differences.join(", ")}. These settings can impact reliability.`
-      );
+      reasons.push(t("reason_key_differences", { diffs: differences.join(", ") }));
     }
 
-    return reasons.length > 0 ? reasons : ["Analysis complete. Review the detailed charts below for more insights."];
+    return reasons.length > 0 ? reasons : [t("reason_analysis_complete")];
   };
 
   const summary = getSummary();
@@ -149,7 +155,7 @@ export function ResultsSummary({
       <CardHeader className="py-2 px-4">
         <CardTitle className="text-lg font-bold uppercase tracking-wider neon-text-subtle flex items-center gap-2 leading-tight">
           <Lightbulb className="h-4 w-4" />
-          Results Summary
+          {t("results_summary_title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-2 space-y-4">
@@ -171,7 +177,7 @@ export function ResultsSummary({
         {reasoning.length > 0 && (
           <div className="pt-3 border-t border-border">
             <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
-              Why This Matters
+              {t("why_this_matters")}
             </div>
             <ul className="space-y-2">
               {reasoning.map((reason, idx) => (
@@ -189,24 +195,24 @@ export function ResultsSummary({
           <div className="pt-3 border-t border-border grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground leading-relaxed">
-                Config A Failure Rate
+                {t("config_a_failure_rate")}
               </div>
               <div className="text-2xl font-bold font-mono text-[#95ccf9] leading-tight">
                 {(configAStats.phat * 100).toFixed(1)}%
               </div>
               <div className="text-sm text-muted-foreground leading-relaxed">
-                {configAStats.k} failures out of {configAStats.n} tests
+                {configAStats.k} {t("failures_out_of_tests")} {configAStats.n} {t("tests")}
               </div>
             </div>
             <div className="space-y-2">
               <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground leading-relaxed">
-                Config B Failure Rate
+                {t("config_b_failure_rate")}
               </div>
               <div className="text-2xl font-bold font-mono text-[#25924d] leading-tight">
                 {(configBStats.phat * 100).toFixed(1)}%
               </div>
               <div className="text-sm text-muted-foreground leading-relaxed">
-                {configBStats.k} failures out of {configBStats.n} tests
+                {configBStats.k} {t("failures_out_of_tests")} {configBStats.n} {t("tests")}
               </div>
             </div>
           </div>

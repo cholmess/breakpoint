@@ -20,7 +20,10 @@ import { BreakFirstTimeline } from "@/components/break-first-timeline";
 import { Activity, Zap, Play, HelpCircle, Download, Square, Compass, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import Link from "next/link";
+import { usePlainLanguage } from "@/lib/plain-language-context";
+import { useText } from "@/hooks/use-text";
 import { cn } from "@/lib/utils";
 import { exportReportAsPdf } from "@/lib/export-report";
 import { startDashboardTour } from "@/lib/dashboard-tour";
@@ -54,6 +57,8 @@ const defaultConfigB: Config = {
 };
 
 export default function Dashboard() {
+  const { t } = useText();
+  const { isPlainLanguage, setPlainLanguage } = usePlainLanguage();
   const [configA, setConfigA] = useState<Config>(defaultConfigA);
   const [configB, setConfigB] = useState<Config>(defaultConfigB);
   const [runMode, setRunMode] = useState<"simulate" | "real">("simulate");
@@ -320,8 +325,8 @@ export default function Dashboard() {
       <OrbTrail />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/30 glass-card">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="p-1.5 rounded-md bg-black border border-zinc-800">
               <Activity className="h-4 w-4 text-[#99e4f2]" />
             </div>
@@ -330,11 +335,21 @@ export default function Dashboard() {
                 BreakPoint
               </h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                AI Observability Tool
+                {t("app_subtitle")}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0 justify-center">
+            <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground">
+              <Switch
+                checked={isPlainLanguage}
+                onCheckedChange={setPlainLanguage}
+                aria-label="Plain language mode"
+              />
+              <span>{t("plain_language_toggle")}</span>
+            </label>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="ghost"
               size="default"
@@ -342,7 +357,7 @@ export default function Dashboard() {
               onClick={() => startDashboardTour()}
             >
               <Compass className="h-5 w-5 mr-2" />
-              Take a tour
+              {t("take_a_tour")}
             </Button>
             <Link href="/help">
               <Button
@@ -351,7 +366,7 @@ export default function Dashboard() {
                 className="text-base font-bold text-muted-foreground hover:text-foreground"
               >
                 <HelpCircle className="h-5 w-5 mr-2" />
-                Help! 🦥
+                {t("help")}
               </Button>
             </Link>
           </div>
@@ -375,7 +390,7 @@ export default function Dashboard() {
             <Card id="tour-run-mode" className="py-1.5 glass-card">
               <CardContent className="p-3">
                 <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-2 leading-relaxed">
-                  Run Mode
+                  {t("run_mode")}
                 </div>
                 <div className="flex gap-2 mb-2">
                   <button
@@ -388,7 +403,7 @@ export default function Dashboard() {
                         : "bg-card hover:bg-secondary border-border text-foreground"
                     )}
                   >
-                    Simulate
+                    {t("simulate")}
                   </button>
                   <button
                     type="button"
@@ -400,7 +415,7 @@ export default function Dashboard() {
                         : "bg-card hover:bg-secondary border-border text-foreground"
                     )}
                   >
-                    Real API
+                    {t("real_api")}
                   </button>
                 </div>
                 <div className="flex gap-2 mb-3">
@@ -414,7 +429,7 @@ export default function Dashboard() {
                         : "bg-card hover:bg-secondary border-border text-foreground"
                     )}
                   >
-                    Quick (20 prompts)
+                    {t("quick_prompts")}
                   </button>
                   <button
                     type="button"
@@ -426,7 +441,7 @@ export default function Dashboard() {
                         : "bg-card hover:bg-secondary border-border text-foreground"
                     )}
                   >
-                    Full (200 prompts)
+                    {t("full_prompts")}
                   </button>
                 </div>
                 {missingKey && (
@@ -448,12 +463,12 @@ export default function Dashboard() {
                     {status === "running" ? (
                       <>
                         <Square className="h-3.5 w-3.5 mr-1.5" />
-                        Stop Simulation
+                        {t("stop_simulation")}
                       </>
                     ) : (
                       <>
                         <Play className="h-3.5 w-3.5 mr-1.5" />
-                        Run Simulation
+                        {t("run_simulation")}
                       </>
                     )}
                   </Button>
@@ -477,14 +492,14 @@ export default function Dashboard() {
           <div id="tour-results" className="col-span-7 space-y-4">
             {loading ? (
               <div className="text-center py-8 text-base text-muted-foreground leading-relaxed">
-                Loading analysis data...
+                {t("loading_analysis")}
               </div>
             ) : status === "running" ? (
               <div className="text-center py-8 space-y-4">
                 <div className="text-base text-muted-foreground mb-4 leading-relaxed">
                   {progress >= 95 
-                    ? "Finalizing results..." 
-                    : `Running simulation... (est. ${
+                    ? t("finalizing_results") 
+                    : `${t("running_simulation")} (est. ${
                         runMode === "simulate"
                           ? runSize === "quick" ? "~5s" : "~20s"
                           : runSize === "quick" ? "~30s" : "~50s"
@@ -499,14 +514,14 @@ export default function Dashboard() {
                 </div>
                 <div className="text-sm text-muted-foreground leading-relaxed">
                   {progress.toFixed(1)}%
-                  {progress >= 95 && <span className="ml-2 text-xs">(processing...)</span>}
+                  {progress >= 95 && <span className="ml-2 text-xs">{t("processing")}</span>}
                 </div>
               </div>
             ) : error ? (
               <div className="text-center py-8 space-y-3">
                 <div className="text-base font-medium text-destructive leading-relaxed">{error}</div>
                 <div className="text-sm text-muted-foreground leading-relaxed">
-                  Please check your configuration and try again.
+                  {t("please_check_config")}
                 </div>
               </div>
             ) : (() => {
@@ -516,10 +531,10 @@ export default function Dashboard() {
                 return (
                   <div className="text-center py-8 space-y-3">
                     <p className="text-base text-muted-foreground leading-relaxed">
-                      No comparisons yet. Run a simulation to see results.
+                      {t("no_comparisons_yet")}
                     </p>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Configure Config A and Config B, then click "Run Simulation".
+                      {t("configure_then_run")}
                     </p>
                   </div>
                 );
@@ -528,10 +543,10 @@ export default function Dashboard() {
                 return (
                   <div className="text-center py-8 space-y-3">
                     <p className="text-base text-muted-foreground leading-relaxed">
-                      Configs have changed since the last run.
+                      {t("configs_changed")}
                     </p>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Run a simulation to see results for your current configuration.
+                      {t("run_for_current_config")}
                     </p>
                   </div>
                 );
@@ -547,7 +562,7 @@ export default function Dashboard() {
                 {costBands && (
                   <div className="space-y-2 rounded-lg border border-border/30 bg-muted/10 px-3 py-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-muted-foreground">Cost tolerance:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("cost_tolerance")}</span>
                       {(["1", "2", "3"] as const).map((mult) => (
                         <button
                           key={mult}
@@ -563,10 +578,10 @@ export default function Dashboard() {
                           {mult}×
                         </button>
                       ))}
-                      <span className="text-xs text-muted-foreground">Fewer cost_runaway at higher ×.</span>
+                      <span className="text-xs text-muted-foreground">{t("fewer_cost_runaway")}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-medium text-muted-foreground">Latency tolerance:</span>
+                      <span className="text-sm font-medium text-muted-foreground">{t("latency_tolerance")}</span>
                       {(["1", "2"] as const).map((mult) => (
                         <button
                           key={mult}
@@ -582,7 +597,7 @@ export default function Dashboard() {
                           {mult}×
                         </button>
                       ))}
-                      <span className="text-xs text-muted-foreground">Fewer latency_breach at higher ×.</span>
+                      <span className="text-xs text-muted-foreground">{t("fewer_latency_breach")}</span>
                     </div>
                   </div>
                 )}
@@ -626,7 +641,7 @@ export default function Dashboard() {
                     }}
                   >
                     <Bookmark className="h-4 w-4 mr-2" />
-                    Save as baseline
+                    {t("save_as_baseline")}
                   </Button>
                   <Button
                     variant="outline"
@@ -639,12 +654,13 @@ export default function Dashboard() {
                         displayDistributionsData,
                         simulatedConfigA || configA,
                         simulatedConfigB || configB,
-                        timeline
+                        timeline,
+                        isPlainLanguage
                       )
                     }
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Export report
+                    {t("export_report")}
                   </Button>
                 </div>
                 {/* Row 1: Results Summary */}

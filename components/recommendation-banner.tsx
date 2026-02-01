@@ -1,5 +1,6 @@
 "use client";
 
+import { useText } from "@/hooks/use-text";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config } from "@/types/dashboard";
 
 interface RecommendationBannerProps {
@@ -8,19 +9,6 @@ interface RecommendationBannerProps {
   distributionsData?: DistributionsData | null;
   configA: Config;
   configB: Config;
-}
-
-function confidenceLabel(confidence: number): string {
-  if (confidence >= 0.7) return "high";
-  if (confidence >= 0.5) return "moderate";
-  return "low";
-}
-
-function formatFailureMode(mode: string): string {
-  return mode
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
 }
 
 /**
@@ -34,6 +22,7 @@ export function RecommendationBanner({
   configA,
   configB,
 }: RecommendationBannerProps) {
+  const { t, getFailureModeLabel } = useText();
   const currentComparison = comparisonsData?.comparisons.find(
     (c) =>
       (c.config_a === configA.id && c.config_b === configB.id) ||
@@ -70,7 +59,7 @@ export function RecommendationBanner({
   if (!currentComparison || !configAStats || !configBStats) {
     return (
       <div className="rounded-lg border border-border bg-card px-4 py-3 text-center text-base text-muted-foreground">
-        Run a simulation to see which configuration we recommend and why.
+        {t("run_to_see_recommendation")}
       </div>
     );
   }
@@ -78,36 +67,39 @@ export function RecommendationBanner({
   if (pValue === 0.5) {
     return (
       <div className="rounded-lg border border-border bg-card px-4 py-3 text-center text-base text-muted-foreground">
-        Both configurations are equally likely to be safer. Consider other factors like cost or latency.
+        {t("both_equally_likely")}
       </div>
     );
   }
 
-  const saferName = saferConfig === configA ? "Config A" : "Config B";
-  const otherName = saferConfig === configA ? "Config B" : "Config A";
+  const saferName = saferConfig === configA ? t("config_a") : t("config_b");
+  const otherName = saferConfig === configA ? t("config_b") : t("config_a");
   const saferRate = saferConfig === configA ? configAStats.phat : configBStats.phat;
   const otherRate = saferConfig === configA ? configBStats.phat : configAStats.phat;
   const rateDiffPct = Math.abs((saferRate - otherRate) * 100);
   const lowSample = configAStats.low_sample_warning || configBStats.low_sample_warning;
 
+  const confidenceLabelKey =
+    confidence >= 0.7 ? "confidence_high" : confidence >= 0.5 ? "confidence_moderate" : "confidence_low";
+
   // Build "why" paragraphs
   const whyParts: string[] = [];
   whyParts.push(
-    `We recommend ${saferName} because it had a lower failure rate in this run: ${(saferRate * 100).toFixed(1)}% versus ${otherName}'s ${(otherRate * 100).toFixed(1)}%.`
+    `${t("we_recommend_for_production")} ${saferName} because it had a lower failure rate in this run: ${(saferRate * 100).toFixed(1)}% versus ${otherName}'s ${(otherRate * 100).toFixed(1)}%.`
   );
   whyParts.push(
-    `Our analysis gives a ${confidenceLabel(confidence)} confidence (${confidencePct}%) that ${saferName} is the safer choice for production.`
+    `Our analysis gives a ${t(confidenceLabelKey)} confidence (${confidencePct}%) that ${saferName} is the safer choice for production.`
   );
   if (mostCommon && totalFailures > 0) {
-    const modeName = formatFailureMode(mostCommon.failure_mode as string);
+    const modeName = getFailureModeLabel(mostCommon.failure_mode as string);
     whyParts.push(
       `The most common issue in this run was ${modeName} (${mostCommon.count ?? 0} of ${totalFailures} failure events); ${saferName} handled the workload better overall.`
     );
   }
   if (cheaperIsSafer) {
-    whyParts.push(`${saferName} is also cheaper per 1k tokens, so it's a better choice on both reliability and cost.`);
+    whyParts.push(`${saferName} ${t("cheaper_per_1k")}`);
   } else if (sameCost) {
-    whyParts.push("Both configs have the same cost per 1k tokens, so the recommendation is based purely on reliability.");
+    whyParts.push(t("same_cost_1k"));
   }
 
   return (
@@ -115,14 +107,14 @@ export function RecommendationBanner({
       {/* What we recommend */}
       <div className="px-4 py-3 border-b border-border/50">
         <p className="text-base font-semibold leading-relaxed text-foreground">
-          We recommend <strong>{saferName}</strong> for production.
+          {t("we_recommend_for_production")} <strong>{saferName}</strong> {t("for_production")}
         </p>
       </div>
 
       {/* Why we recommend it */}
       <div className="px-4 py-3 bg-card/50 space-y-3">
         <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          Why we recommend {saferName}
+          {t("why_we_recommend")} {saferName}
         </p>
         <ul className="space-y-2 text-sm text-foreground leading-relaxed list-none">
           {whyParts.map((text, i) => (
@@ -136,18 +128,16 @@ export function RecommendationBanner({
         {/* What it means / what to do */}
         <div className="pt-2 border-t border-border/50">
           <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">
-            What this means
+            {t("what_this_means")}
           </p>
           <p className="text-sm text-foreground leading-relaxed">
-            {lowSample ? (
-              <>
-                Use {saferName} for production if you're satisfied with this sample. For higher confidence, run a full simulation (200 prompts) before committing.
-              </>
-            ) : (
-              <>
-                Use {saferName} in production for better reliability. The {rateDiffPct.toFixed(1)}% lower failure rate and {confidencePct}% confidence support this choice.
-              </>
-            )}
+            {lowSample
+              ? t("use_for_production_if_satisfied", { name: saferName })
+              : t("use_in_production_reliability", {
+                  name: saferName,
+                  rateDiff: rateDiffPct.toFixed(1),
+                  confidence: String(confidencePct),
+                })}
           </p>
         </div>
       </div>

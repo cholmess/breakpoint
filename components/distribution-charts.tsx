@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
+import { useText } from "@/hooks/use-text";
 import type { DistributionsData } from "@/types/dashboard";
 
 interface DistributionChartsProps {
@@ -33,13 +34,6 @@ const getFailureModeColor = (mode: string): string => {
   return colors[mode] || "#6b7280"; // gray default
 };
 
-// Format failure mode name for display
-const formatFailureMode = (mode: string): string => {
-  return mode
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
 
 // Custom tick component for wrapping text
 const CustomTick = ({ x, y, payload }: any) => {
@@ -97,12 +91,13 @@ export function DistributionCharts({
   byPromptFamily,
   type = "both",
 }: DistributionChartsProps) {
+  const { t, getFailureModeLabel } = useText();
   const [hoveredBar, setHoveredBar] = useState<string | null>(null);
 
   // Transform failure mode data for chart
   const failureModeData = Object.values(byFailureMode)
     .map((entry) => ({
-      name: formatFailureMode(entry.failure_mode),
+      name: getFailureModeLabel(entry.failure_mode),
       count: Math.round(entry.count),
       proportion: (entry.proportion * 100).toFixed(1),
       rawName: entry.failure_mode,
@@ -128,17 +123,17 @@ export function DistributionCharts({
       <Card className="py-3 glass-card">
         <CardHeader className="py-2 px-4">
           <CardTitle className="text-lg font-bold uppercase tracking-wider neon-text-subtle leading-tight">
-            Failure Mode Distribution
+            {t("failure_mode_distribution")}
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-            Which types of problems occurred most often during testing.
+            {t("failure_mode_dist_desc")}
           </p>
         </CardHeader>
         <CardContent className="p-2 pb-0">
           <div className="h-[400px] [&_.recharts-wrapper]:!bg-transparent [&_.recharts-surface]:!bg-transparent [&_.recharts-bar-rectangle:hover]:!bg-transparent [&_.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-transparent [&_.recharts-active-shape]:!fill-transparent">
             {failureModeData.length === 0 ? (
               <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
-                No failure data available
+                {t("no_failure_data")}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -183,15 +178,15 @@ export function DistributionCharts({
                       fontSize: "13px",
                     }}
                     formatter={(value: number | undefined, name: string | undefined) => {
-                      if (name === "count") return [Math.round(value ?? 0), "Count"];
-                      if (name === "proportion") return [`${value ?? 0}%`, "Proportion"];
+                      if (name === "count") return [Math.round(value ?? 0), t("count")];
+                      if (name === "proportion") return [`${value ?? 0}%`, t("proportion")];
                       return [Math.round(value ?? 0), name ?? ""];
                     }}
                     cursor={{ fill: 'transparent' }}
                   />
                   <Bar 
                     dataKey="count" 
-                    name="Count" 
+                    name={t("count")} 
                     radius={[2, 2, 0, 0]}
                     isAnimationActive={false}
                     onMouseEnter={(data, index) => {
@@ -286,15 +281,15 @@ export function DistributionCharts({
                       fontSize: "13px",
                     }}
                     formatter={(value: number | undefined, name: string | undefined) => {
-                      if (name === "count") return [Math.round(value ?? 0), "Count"];
-                      if (name === "proportion") return [`${value ?? 0}%`, "Proportion"];
+                      if (name === "count") return [Math.round(value ?? 0), t("count")];
+                      if (name === "proportion") return [`${value ?? 0}%`, t("proportion")];
                       return [Math.round(value ?? 0), name ?? ""];
                     }}
                     cursor={{ fill: 'transparent' }}
                   />
                   <Bar
                     dataKey="count"
-                    name="Count"
+                    name={t("count")}
                     fill="#95ccf9"
                     radius={[2, 2, 0, 0]}
                     isAnimationActive={false}

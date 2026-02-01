@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useText } from "@/hooks/use-text";
 import type { Comparison } from "@/types/dashboard";
 
 interface ProbabilityCardProps {
@@ -17,6 +18,7 @@ export function ProbabilityCard({
   selectedConfigB,
   isRunning,
 }: ProbabilityCardProps) {
+  const { t } = useText();
   // Filter comparisons to only show those involving the selected configs
   const filteredComparisons = comparisons.filter(
     (c) =>
@@ -65,7 +67,7 @@ export function ProbabilityCard({
       <CardContent className="p-6">
         <div className="text-center mb-6">
           <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
-            Which Configuration is Safer?
+            {t("which_config_safer")}
           </div>
           <div
             className={cn(
@@ -84,14 +86,16 @@ export function ProbabilityCard({
             <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium leading-relaxed bg-[#25924d]/10 text-[#25924d]">
               <span className="h-2 w-2 rounded-full bg-[#25924d]" />
               {isSaferA
-                ? `${selectedConfigA || "Config A"} is the safer choice`
-                : `${selectedConfigB || "Config B"} is the safer choice`}
+                ? `${selectedConfigA || t("config_a")} ${t("is_safer_choice")}`
+                : `${selectedConfigB || t("config_b")} ${t("is_safer_choice")}`}
             </div>
           )}
           <div className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto px-2">
             {isIndeterminate
-              ? "Both configurations show similar reliability. Consider other factors like cost or speed."
-              : `Confidence that ${isSaferA ? selectedConfigA || "Config A" : selectedConfigB || "Config B"} has a lower failure rate than the other (Bayesian comparison).`}
+              ? t("both_similar_reliability")
+              : t("confidence_bayesian", {
+                  name: isSaferA ? (selectedConfigA || t("config_a")) : (selectedConfigB || t("config_b")),
+                })}
           </div>
         </div>
 
@@ -99,7 +103,7 @@ export function ProbabilityCard({
         {filteredComparisons.length > 1 && (
           <div className="mt-6 pt-4 border-t border-border">
             <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-3 leading-relaxed">
-              All Comparisons
+              {t("all_comparisons")}
             </div>
             <div className="space-y-2 max-h-32 overflow-y-auto">
               {filteredComparisons.map((comp, idx) => {

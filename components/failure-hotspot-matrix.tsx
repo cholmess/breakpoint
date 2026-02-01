@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useText } from "@/hooks/use-text";
 import { HotspotEntry } from "@/types/dashboard";
 
 interface FailureHotspotMatrixProps {
@@ -8,17 +9,18 @@ interface FailureHotspotMatrixProps {
 }
 
 export function FailureHotspotMatrix({ hotspotMatrix }: FailureHotspotMatrixProps) {
+  const { t, getFailureModeLabel } = useText();
   if (!hotspotMatrix || hotspotMatrix.length === 0) {
     return (
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-base font-semibold neon-text-subtle leading-relaxed">
-            Failure Hotspot Matrix
+            {t("failure_hotspot_matrix")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            No failures detected
+            {t("no_failures_detected")}
           </p>
         </CardContent>
       </Card>
@@ -48,14 +50,6 @@ export function FailureHotspotMatrix({ hotspotMatrix }: FailureHotspotMatrixProp
     return "bg-red-500/80 border-red-500/90";
   };
 
-  // Format failure mode for display
-  const formatMode = (mode: string): string => {
-    return mode
-      .split("_")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
   // Format family for display
   const formatFamily = (family: string): string => {
     return family
@@ -68,10 +62,10 @@ export function FailureHotspotMatrix({ hotspotMatrix }: FailureHotspotMatrixProp
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="text-base font-semibold neon-text-subtle leading-relaxed">
-          Failure Hotspot Matrix
+          {t("failure_hotspot_matrix")}
         </CardTitle>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Cross-tabulation of failure modes × prompt families
+          {t("hotspot_matrix_desc")}
         </p>
       </CardHeader>
       <CardContent>
@@ -96,7 +90,7 @@ export function FailureHotspotMatrix({ hotspotMatrix }: FailureHotspotMatrixProp
               {failureModes.map(mode => (
                 <tr key={mode}>
                   <td className="border border-border/30 bg-muted/10 px-3 py-2 text-xs font-medium text-foreground">
-                    {formatMode(mode)}
+                    {getFailureModeLabel(mode)}
                   </td>
                   {families.map(family => {
                     const count = lookupMap.get(`${mode}|${family}`) ?? 0;

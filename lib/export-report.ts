@@ -9,6 +9,12 @@ import type {
   Timeline,
   HotspotEntry,
 } from "@/types/dashboard";
+import {
+  TEXT_DICTIONARY,
+  type TextKey,
+  getFailureModeLabel as getFailureModeLabelDict,
+  getFailureModeDescription as getFailureModeDescriptionDict,
+} from "@/lib/text-dictionary";
 
 const MARGIN = 18;
 const LINE_HEIGHT = 6;
@@ -28,15 +34,31 @@ const COLORS = {
   white: [255, 255, 255] as [number, number, number],
 };
 
-function formatFailureMode(mode: string): string {
-  return mode
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+function getT(
+  key: TextKey,
+  isPlain: boolean,
+  params?: Record<string, string | number>
+): string {
+  const entry = TEXT_DICTIONARY[key];
+  if (!entry) return String(key);
+  let str: string = isPlain ? entry.plain : entry.technical;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      str = str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    }
+  }
+  return str;
 }
 
-function configLabel(configId: string, configA: Config, configB: Config): string {
-  return configId === configA.id ? "Config A" : configId === configB.id ? "Config B" : configId;
+function configLabel(
+  configId: string,
+  configA: Config,
+  configB: Config,
+  isPlain: boolean
+): string {
+  const a = getT("config_a", isPlain);
+  const b = getT("config_b", isPlain);
+  return configId === configA.id ? a : configId === configB.id ? b : configId;
 }
 
 interface ReportContent {
@@ -58,7 +80,8 @@ function getReportContent(
   comparisonsData: ComparisonsData | null,
   distributionsData: DistributionsData | null,
   configA: Config,
-  configB: Config
+  configB: Config,
+  isPlainLanguage: boolean
 ): ReportContent {
   const currentComparison = comparisonsData?.comparisons.find(
     (c) =>
@@ -78,26 +101,44 @@ function getReportContent(
   const confidence = pValue != null ? Math.abs(pValue - 0.5) * 2 : 0;
   const confidencePct = Math.round(confidence * 100);
 
+  const configALabel = getT("config_a", isPlainLanguage);
+  const configBLabel = getT("config_b", isPlainLanguage);
+
   let summary: string;
   if (!currentComparison || !configAStatsRaw || !configBStatsRaw) {
-    summary = "Run a simulation to see which configuration performs better.";
+    summary = getT("run_simulation_to_see", isPlainLanguage);
   } else if (pValue === 0.5) {
-    summary = "Both configurations show similar failure rates. Consider other factors like cost or latency.";
+    summary = getT("both_similar_failure_rates", isPlainLanguage);
   } else {
-    const saferName = saferConfig === configA ? "Config A" : "Config B";
-    const otherName = saferConfig === configA ? "Config B" : "Config A";
-    const saferRate = saferConfig === configA ? configAStatsRaw.phat : configBStatsRaw.phat;
-    const otherRate = saferConfig === configA ? configBStatsRaw.phat : configAStatsRaw.phat;
+    const saferName = saferConfig === configA ? configALabel : configBLabel;
+    const otherName = saferConfig === configA ? configBLabel : configALabel;
+    const saferRatePct = (saferConfig === configA ? configAStatsRaw.phat : configBStatsRaw.phat) * 100;
+    const otherRatePct = (saferConfig === configA ? configBStatsRaw.phat : configAStatsRaw.phat) * 100;
+    const saferRateStr = saferRatePct.toFixed(1);
+    const otherRateStr = otherRatePct.toFixed(1);
     if (confidence > 0.7) {
-      summary = `${saferName} is significantly more reliable, with ${(saferRate * 100).toFixed(1)}% failure rate compared to ${otherName}'s ${(otherRate * 100).toFixed(1)}%.`;
+      summary = getT("summary_significantly_more_reliable", isPlainLanguage, {
+        saferName,
+        otherName,
+        saferRate: saferRateStr,
+        otherRate: otherRateStr,
+      });
     } else if (confidence > 0.5) {
-      summary = `${saferName} appears more reliable (${(saferRate * 100).toFixed(1)}% vs ${(otherRate * 100).toFixed(1)}% failure rate), though the difference is moderate.`;
+      summary = getT("summary_appears_more_reliable", isPlainLanguage, {
+        saferName,
+        saferRate: saferRateStr,
+        otherRate: otherRateStr,
+      });
     } else {
-      summary = `The configurations are quite similar. ${saferName} has a slightly lower failure rate (${(saferRate * 100).toFixed(1)}% vs ${(otherRate * 100).toFixed(1)}%).`;
+      summary = getT("summary_quite_similar", isPlainLanguage, {
+        saferName,
+        saferRate: saferRateStr,
+        otherRate: otherRateStr,
+      });
     }
   }
 
-  const saferConfigName = saferConfig === configA ? "Config A" : saferConfig === configB ? "Config B" : null;
+  const saferConfigName = saferConfig === configA ? configALabel : saferConfig === configB ? configBLabel : null;
   const configAStats =
     configAStatsRaw != null
       ? { phat: configAStatsRaw.phat, k: configAStatsRaw.k, n: configAStatsRaw.n }
@@ -111,7 +152,7 @@ function getReportContent(
   const topFailureModes = Object.values(byMode)
     .filter((e) => e.failure_mode != null)
     .map((e) => ({
-      name: formatFailureMode(e.failure_mode as string),
+      name: getFailureModeLabelDict(e.failure_mode as string, isPlainLanguage),
       count: e.count ?? 0,
     }))
     .sort((a, b) => b.count - a.count)
@@ -133,7 +174,7 @@ function getReportContent(
     .slice(0, 10)
     .map((h: HotspotEntry) => ({
       family: (h.family || "").replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
-      failure_mode: formatFailureMode(h.failure_mode || ""),
+      failure_mode: getFailureModeLabelDict(h.failure_mode || "", isPlainLanguage),
       count: h.count ?? 0,
     }));
 
@@ -142,9 +183,9 @@ function getReportContent(
 
   if (saferConfigName && configAStats && configBStats) {
     const saferName = saferConfigName;
-    const otherName = saferConfigName === "Config A" ? "Config B" : "Config A";
-    const saferRate = saferConfigName === "Config A" ? configAStats.phat : configBStats.phat;
-    const otherRate = saferConfigName === "Config A" ? configBStats.phat : configAStats.phat;
+    const otherName = saferConfigName === configALabel ? configBLabel : configALabel;
+    const saferRate = saferConfigName === configALabel ? configAStats.phat : configBStats.phat;
+    const otherRate = saferConfigName === configALabel ? configBStats.phat : configAStats.phat;
     whyBullets.push(
       `${saferName} had a lower failure rate: ${(saferRate * 100).toFixed(1)}% versus ${otherName}'s ${(otherRate * 100).toFixed(1)}%.`
     );
@@ -156,8 +197,9 @@ function getReportContent(
       .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0];
     const totalFailures = Object.values(byMode).reduce((sum, e) => sum + (e.count ?? 0), 0);
     if (mostCommon && totalFailures > 0) {
+      const modeName = getFailureModeLabelDict(mostCommon.failure_mode as string, isPlainLanguage);
       whyBullets.push(
-        `Most common issue: ${formatFailureMode(mostCommon.failure_mode as string)} (${mostCommon.count ?? 0} of ${totalFailures} events); ${saferName} performed better overall.`
+        `Most common issue: ${modeName} (${mostCommon.count ?? 0} of ${totalFailures} events); ${saferName} performed better overall.`
       );
     }
     const hasCost =
@@ -168,9 +210,9 @@ function getReportContent(
           ? configA.cost_per_1k_tokens < configB.cost_per_1k_tokens
           : configB.cost_per_1k_tokens < configA.cost_per_1k_tokens;
       if (cheaper) {
-        whyBullets.push(`${saferName} is also cheaper per 1k tokens.`);
+        whyBullets.push(`${saferName} ${getT("cheaper_per_1k", isPlainLanguage)}`);
       } else if (configA.cost_per_1k_tokens === configB.cost_per_1k_tokens) {
-        whyBullets.push("Both configs have the same cost per 1k tokens.");
+        whyBullets.push(getT("same_cost_1k", isPlainLanguage));
       }
     }
   }
@@ -179,9 +221,13 @@ function getReportContent(
   if (saferConfigName && configAStats && configBStats) {
     const rateDiffPct = Math.abs((configAStats.phat - configBStats.phat) * 100);
     if (lowSample) {
-      whatItMeans = `Use ${saferConfigName} if satisfied with this sample. For higher confidence, run a full simulation (200 prompts) before committing.`;
+      whatItMeans = getT("use_for_production_if_satisfied", isPlainLanguage, { name: saferConfigName });
     } else {
-      whatItMeans = `Use ${saferConfigName} in production. The ${rateDiffPct.toFixed(1)}% lower failure rate and ${confidencePct}% confidence support this choice.`;
+      whatItMeans = getT("use_in_production_reliability", isPlainLanguage, {
+        name: saferConfigName,
+        rateDiff: rateDiffPct.toFixed(1),
+        confidence: String(confidencePct),
+      });
     }
   }
 
@@ -313,7 +359,8 @@ export function exportReportAsPdf(
   distributionsData: DistributionsData | null,
   configA: Config,
   configB: Config,
-  timeline?: Timeline | null
+  timeline?: Timeline | null,
+  isPlainLanguage: boolean = false
 ): void {
   const doc = new jsPDF();
   let y = 0;
@@ -324,7 +371,8 @@ export function exportReportAsPdf(
     comparisonsData,
     distributionsData,
     configA,
-    configB
+    configB,
+    isPlainLanguage
   );
   const {
     summary,
@@ -340,6 +388,9 @@ export function exportReportAsPdf(
     topHotspots,
   } = content;
 
+  const configALabel = getT("config_a", isPlainLanguage);
+  const configBLabel = getT("config_b", isPlainLanguage);
+
   // —— Header ——
   doc.setFillColor(...COLORS.headerBg);
   doc.rect(0, 0, PAGE_WIDTH, 28, "F");
@@ -349,19 +400,21 @@ export function exportReportAsPdf(
   doc.text("BreakPoint", MARGIN, 14);
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("AI Observability · Configuration Comparison Report", MARGIN, 22);
+  doc.text(getT("report_subtitle", isPlainLanguage), MARGIN, 22);
   doc.setFontSize(9);
   doc.setTextColor(220, 220, 220);
   doc.text(`Generated ${new Date().toLocaleString()}`, PAGE_WIDTH - MARGIN, 22, { align: "right" });
   y = 36;
 
   // —— Recommendation & rationale ——
-  y = drawSectionHeader(doc, y, "Recommendation");
+  y = drawSectionHeader(doc, y, getT("recommendation", isPlainLanguage));
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...COLORS.text);
   doc.text(
-    saferConfigName ? `We recommend ${saferConfigName} for production.` : "No clear recommendation from this run.",
+    saferConfigName
+      ? getT("we_recommend_for_production_pdf", isPlainLanguage, { name: saferConfigName })
+      : getT("no_clear_recommendation", isPlainLanguage),
     MARGIN,
     y + 6
   );
@@ -371,7 +424,7 @@ export function exportReportAsPdf(
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.textMuted);
-    doc.text("Why we recommend this configuration:", MARGIN, y + 4);
+    doc.text(getT("why_recommend_this_config", isPlainLanguage), MARGIN, y + 4);
     y += 10;
     doc.setTextColor(...COLORS.text);
     for (const bullet of whyBullets) {
@@ -388,7 +441,7 @@ export function exportReportAsPdf(
 
   doc.setFontSize(9);
   doc.setTextColor(...COLORS.textMuted);
-  doc.text("What this means:", MARGIN, y + 4);
+  doc.text(getT("what_this_means_colon", isPlainLanguage), MARGIN, y + 4);
   y += 6;
   doc.setTextColor(...COLORS.text);
   const whatLines = wrapText(doc, whatItMeans, CONTENT_WIDTH - 4, 9);
@@ -399,7 +452,7 @@ export function exportReportAsPdf(
   y += 6;
 
   // —— Executive summary (one-line) ——
-  y = drawSectionHeader(doc, y, "Executive summary");
+  y = drawSectionHeader(doc, y, getT("executive_summary", isPlainLanguage));
   const summaryLines = wrapText(doc, summary, CONTENT_WIDTH - 8, 10);
   const summaryBoxHeight = Math.max(18, summaryLines.length * LINE_HEIGHT + 10);
   doc.setFillColor(...COLORS.accentLight);
@@ -425,20 +478,29 @@ export function exportReportAsPdf(
     doc.text(`${confidencePct}% confidence`, MARGIN + 6, y + 7);
     doc.setTextColor(...COLORS.text);
     doc.setFont("helvetica", "normal");
-    doc.text(`that ${saferConfigName} is safer for production`, MARGIN + 60, y + 7);
+    doc.text(
+      getT("confidence_that_safer", isPlainLanguage, { name: saferConfigName }),
+      MARGIN + 60,
+      y + 7
+    );
     y += 14;
   }
   y += 4;
 
   // —— Reliability metrics ——
   y = ensureSpace(doc, y, 50);
-  y = drawSectionHeader(doc, y + 2, "Reliability metrics");
+  y = drawSectionHeader(doc, y + 2, getT("reliability_metrics", isPlainLanguage));
   const tableColWidths = [42, 38, 42, 35];
-  const tableHeaders = ["Configuration", "Failure rate", "Failures", "Tests"];
+  const tableHeaders = [
+    getT("table_configuration", isPlainLanguage),
+    getT("table_failure_rate", isPlainLanguage),
+    getT("table_failures", isPlainLanguage),
+    getT("table_tests", isPlainLanguage),
+  ];
   const tableRows: string[][] = [];
   if (configAStats != null) {
     tableRows.push([
-      "Config A",
+      configALabel,
       `${(configAStats.phat * 100).toFixed(1)}%`,
       String(configAStats.k),
       String(configAStats.n),
@@ -446,7 +508,7 @@ export function exportReportAsPdf(
   }
   if (configBStats != null) {
     tableRows.push([
-      "Config B",
+      configBLabel,
       `${(configBStats.phat * 100).toFixed(1)}%`,
       String(configBStats.k),
       String(configBStats.n),
@@ -458,29 +520,45 @@ export function exportReportAsPdf(
   if (lowSample) {
     doc.setFontSize(8);
     doc.setTextColor(...COLORS.textMuted);
-    doc.text(
-      "Note: Fewer than 100 tests per config; consider a full run for higher confidence.",
-      MARGIN,
-      y + 4
-    );
+    doc.text(getT("note_low_sample", isPlainLanguage), MARGIN, y + 4);
     y += 10;
   }
   y += 4;
 
   // —— Configurations compared ——
-  const configTableHeaders = ["Parameter", "Config A", "Config B"];
+  const configTableHeaders = [
+    getT("table_parameter", isPlainLanguage),
+    configALabel,
+    configBLabel,
+  ];
   const configTableRows = [
-    ["Model", configA.model, configB.model],
-    ["Context window", `${configA.context_window} tokens`, `${configB.context_window} tokens`],
-    ["Max output tokens", String(configA.max_output_tokens), String(configB.max_output_tokens)],
-    ["Tools", configA.tools_enabled ? "Enabled" : "Disabled", configB.tools_enabled ? "Enabled" : "Disabled"],
-    ["Temperature", String(configA.temperature), String(configB.temperature)],
-    ["Cost per 1k tokens", `$${configA.cost_per_1k_tokens}`, `$${configB.cost_per_1k_tokens}`],
+    [getT("label_model", isPlainLanguage), configA.model, configB.model],
+    [
+      getT("label_context_window", isPlainLanguage),
+      `${configA.context_window}`,
+      `${configB.context_window}`,
+    ],
+    [
+      getT("label_max_output", isPlainLanguage),
+      String(configA.max_output_tokens),
+      String(configB.max_output_tokens),
+    ],
+    [
+      getT("label_tools", isPlainLanguage),
+      configA.tools_enabled ? getT("tools_enabled", isPlainLanguage) : getT("tools_disabled", isPlainLanguage),
+      configB.tools_enabled ? getT("tools_enabled", isPlainLanguage) : getT("tools_disabled", isPlainLanguage),
+    ],
+    [getT("label_temperature", isPlainLanguage), String(configA.temperature), String(configB.temperature)],
+    [
+      getT("label_cost_per_1k", isPlainLanguage),
+      `$${configA.cost_per_1k_tokens}`,
+      `$${configB.cost_per_1k_tokens}`,
+    ],
   ];
   const configTableColWidths = [48, 63, 63];
   const configTableHeight = 14 + (configTableRows.length + 1) * 8;
   y = ensureSpace(doc, y, configTableHeight);
-  y = drawSectionHeader(doc, y + 2, "Configurations compared");
+  y = drawSectionHeader(doc, y + 2, getT("configurations_compared", isPlainLanguage));
   y = drawTable(doc, y, configTableHeaders, configTableRows, configTableColWidths);
   y += 4;
 
@@ -488,7 +566,7 @@ export function exportReportAsPdf(
   const breakPoints = timeline?.break_points ?? [];
   if (breakPoints.length > 0) {
     y = ensureSpace(doc, y, 15 + breakPoints.length * 14);
-    y = drawSectionHeader(doc, y + 2, "Break-first timeline");
+    y = drawSectionHeader(doc, y + 2, getT("break_first_timeline", isPlainLanguage));
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     const sorted = [...breakPoints].sort(
@@ -496,9 +574,10 @@ export function exportReportAsPdf(
     );
     for (const bp of sorted) {
       doc.setTextColor(...COLORS.text);
-      const label = configLabel(bp.config_id, configA, configB);
+      const label = configLabel(bp.config_id, configA, configB, isPlainLanguage);
+      const modeLabel = getFailureModeLabelDict(bp.failure_mode, isPlainLanguage);
       doc.text(
-        `${label} broke at prompt ${bp.prompt_id} (${formatFailureMode(bp.failure_mode)}, ${bp.severity})`,
+        `${label} ${getT("broke_at_prompt", isPlainLanguage)} ${bp.prompt_id} (${modeLabel}, ${bp.severity})`,
         MARGIN,
         y + 5
       );
@@ -509,7 +588,7 @@ export function exportReportAsPdf(
 
   // —— Failure mode breakdown ——
   y = ensureSpace(doc, y, 30);
-  y = drawSectionHeader(doc, y + 2, "Failure mode breakdown");
+  y = drawSectionHeader(doc, y + 2, getT("failure_mode_breakdown_section", isPlainLanguage));
   if (topFailureModes.length > 0) {
     const maxCount = Math.max(...topFailureModes.map((m) => m.count), 1);
     const barStartX = MARGIN + 58;
@@ -530,7 +609,7 @@ export function exportReportAsPdf(
     }
   } else {
     doc.setTextColor(...COLORS.textMuted);
-    doc.text("No failure events in this run.", MARGIN, y + 5);
+    doc.text(getT("no_failure_events_run", isPlainLanguage), MARGIN, y + 5);
     y += 12;
   }
   y += 6;
@@ -538,7 +617,7 @@ export function exportReportAsPdf(
   // —— Prompt family distribution ——
   const promptFamilySectionHeight = 14 + (topPromptFamilies.length > 0 ? topPromptFamilies.length * 8 + 4 : 14);
   y = ensureSpace(doc, y, promptFamilySectionHeight);
-  y = drawSectionHeader(doc, y + 2, "Prompt family distribution");
+  y = drawSectionHeader(doc, y + 2, getT("prompt_family_distribution_section", isPlainLanguage));
   if (topPromptFamilies.length > 0) {
     doc.setFontSize(9);
     for (const { name, count } of topPromptFamilies) {
@@ -550,7 +629,7 @@ export function exportReportAsPdf(
     }
   } else {
     doc.setTextColor(...COLORS.textMuted);
-    doc.text("No prompt family data.", MARGIN, y + 5);
+    doc.text(getT("no_prompt_family_data_run", isPlainLanguage), MARGIN, y + 5);
     y += 10;
   }
   y += 4;
@@ -558,9 +637,13 @@ export function exportReportAsPdf(
   // —— Failure hotspots (family × mode) ——
   if (topHotspots.length > 0) {
     y = ensureSpace(doc, y, 35);
-    y = drawSectionHeader(doc, y + 2, "Failure hotspots (prompt family × failure mode)");
+    y = drawSectionHeader(doc, y + 2, getT("failure_hotspots_section", isPlainLanguage));
     const hotspotColWidths = [55, 55, 25];
-    const hotspotHeaders = ["Prompt family", "Failure mode", "Count"];
+    const hotspotHeaders = [
+      getT("table_prompt_family", isPlainLanguage),
+      getT("table_failure_mode", isPlainLanguage),
+      getT("count", isPlainLanguage),
+    ];
     const hotspotRows = topHotspots.map((h) => [h.family, h.failure_mode, String(h.count)]);
     y = drawTable(doc, y, hotspotHeaders, hotspotRows, hotspotColWidths);
     y += 4;
