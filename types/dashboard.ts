@@ -91,4 +91,15 @@ export interface Timeline {
   break_points: BreakPoint[];
 }
 
+/** Snapshot of a run saved as baseline (localStorage). */
+export interface Baseline {
+  analysis: AnalysisData;
+  comparisons: ComparisonsData;
+  distributions: DistributionsData;
+  configA: Config;
+  configB: Config;
+  timeline?: Timeline | null;
+  savedAt: string; // ISO date
+}
+
 
