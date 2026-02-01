@@ -14,6 +14,7 @@ import {
   type TextKey,
   getFailureModeLabel as getFailureModeLabelDict,
   getFailureModeDescription as getFailureModeDescriptionDict,
+  getFailureModeRemediation,
 } from "@/lib/text-dictionary";
 
 const MARGIN = 18;
@@ -61,18 +62,38 @@ function configLabel(
   return configId === configA.id ? a : configId === configB.id ? b : configId;
 }
 
+interface ConfigStatsExtended {
+  phat: number;
+  k: number;
+  n: number;
+  ci_wilson?: [number, number];
+  ci_bayesian?: [number, number];
+}
+
+interface FailureModeDetail {
+  name: string;
+  key: string;
+  count: number;
+  proportion: number;
+  severity: "HIGH" | "MED";
+}
+
 interface ReportContent {
   summary: string;
   confidencePct: number;
   saferConfigName: string | null;
-  configAStats: { phat: number; k: number; n: number } | null;
-  configBStats: { phat: number; k: number; n: number } | null;
+  configAStats: ConfigStatsExtended | null;
+  configBStats: ConfigStatsExtended | null;
   topFailureModes: { name: string; count: number }[];
+  failureModeDetails: FailureModeDetail[];
   whyBullets: string[];
   whatItMeans: string;
   lowSample: boolean;
   topPromptFamilies: { name: string; count: number }[];
   topHotspots: { family: string; failure_mode: string; count: number }[];
+  totalFailures: number;
+  highSeverityCount: number;
+  medSeverityCount: number;
 }
 
 function getReportContent(
@@ -139,24 +160,61 @@ function getReportContent(
   }
 
   const saferConfigName = saferConfig === configA ? configALabel : saferConfig === configB ? configBLabel : null;
-  const configAStats =
+  const configAStats: ConfigStatsExtended | null =
     configAStatsRaw != null
-      ? { phat: configAStatsRaw.phat, k: configAStatsRaw.k, n: configAStatsRaw.n }
+      ? {
+          phat: configAStatsRaw.phat,
+          k: configAStatsRaw.k,
+          n: configAStatsRaw.n,
+          ci_wilson: configAStatsRaw.ci_wilson,
+          ci_bayesian: configAStatsRaw.ci_bayesian,
+        }
       : null;
-  const configBStats =
+  const configBStats: ConfigStatsExtended | null =
     configBStatsRaw != null
-      ? { phat: configBStatsRaw.phat, k: configBStatsRaw.k, n: configBStatsRaw.n }
+      ? {
+          phat: configBStatsRaw.phat,
+          k: configBStatsRaw.k,
+          n: configBStatsRaw.n,
+          ci_wilson: configBStatsRaw.ci_wilson,
+          ci_bayesian: configBStatsRaw.ci_bayesian,
+        }
       : null;
 
   const byMode = distributionsData?.by_failure_mode ?? {};
-  const topFailureModes = Object.values(byMode)
-    .filter((e) => e.failure_mode != null)
+  const allModeEntries = Object.values(byMode).filter((e) => e.failure_mode != null);
+  const topFailureModes = allModeEntries
     .map((e) => ({
       name: getFailureModeLabelDict(e.failure_mode as string, isPlainLanguage),
       count: e.count ?? 0,
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
+
+  // Severity mapping for failure modes
+  const highSeverityModes = ["context_overflow", "cost_runaway", "tool_timeout_risk"];
+  const totalFailures = allModeEntries.reduce((sum, e) => sum + (e.count ?? 0), 0);
+
+  const failureModeDetails: FailureModeDetail[] = allModeEntries
+    .map((e) => ({
+      name: getFailureModeLabelDict(e.failure_mode as string, isPlainLanguage),
+      key: e.failure_mode as string,
+      count: e.count ?? 0,
+      proportion: e.proportion ?? (totalFailures > 0 ? (e.count ?? 0) / totalFailures : 0),
+      severity: (highSeverityModes.includes(e.failure_mode as string) ? "HIGH" : "MED") as "HIGH" | "MED",
+    }))
+    .sort((a, b) => {
+      // Sort by severity first (HIGH first), then by count
+      if (a.severity !== b.severity) return a.severity === "HIGH" ? -1 : 1;
+      return b.count - a.count;
+    });
+
+  const highSeverityCount = failureModeDetails
+    .filter((f) => f.severity === "HIGH")
+    .reduce((sum, f) => sum + f.count, 0);
+  const medSeverityCount = failureModeDetails
+    .filter((f) => f.severity === "MED")
+    .reduce((sum, f) => sum + f.count, 0);
 
   const byFamily = distributionsData?.by_prompt_family ?? {};
   const topPromptFamilies = Object.values(byFamily)
@@ -238,11 +296,15 @@ function getReportContent(
     configAStats,
     configBStats,
     topFailureModes,
+    failureModeDetails,
     whyBullets,
     whatItMeans,
     lowSample,
     topPromptFamilies,
     topHotspots,
+    totalFailures,
+    highSeverityCount,
+    medSeverityCount,
   };
 }
 
@@ -364,7 +426,6 @@ export function exportReportAsPdf(
 ): void {
   const doc = new jsPDF();
   let y = 0;
-  let pageNum = 1;
 
   const content = getReportContent(
     analysisData,
@@ -381,11 +442,15 @@ export function exportReportAsPdf(
     configAStats,
     configBStats,
     topFailureModes,
+    failureModeDetails,
     whyBullets,
     whatItMeans,
     lowSample,
     topPromptFamilies,
     topHotspots,
+    totalFailures,
+    highSeverityCount,
+    medSeverityCount,
   } = content;
 
   const configALabel = getT("config_a", isPlainLanguage);
@@ -487,29 +552,40 @@ export function exportReportAsPdf(
   }
   y += 4;
 
-  // —— Reliability metrics ——
-  y = ensureSpace(doc, y, 50);
+  // —— Reliability metrics (with confidence intervals) ——
+  y = ensureSpace(doc, y, 60);
   y = drawSectionHeader(doc, y + 2, getT("reliability_metrics", isPlainLanguage));
-  const tableColWidths = [42, 38, 42, 35];
+  const tableColWidths = [38, 32, 48, 28, 28];
   const tableHeaders = [
     getT("table_configuration", isPlainLanguage),
     getT("table_failure_rate", isPlainLanguage),
+    getT("table_ci_95", isPlainLanguage),
     getT("table_failures", isPlainLanguage),
     getT("table_tests", isPlainLanguage),
   ];
   const tableRows: string[][] = [];
   if (configAStats != null) {
+    const ci = configAStats.ci_wilson;
+    const ciStr = ci
+      ? `${(ci[0] * 100).toFixed(1)}% – ${(ci[1] * 100).toFixed(1)}%`
+      : "N/A";
     tableRows.push([
       configALabel,
       `${(configAStats.phat * 100).toFixed(1)}%`,
+      ciStr,
       String(configAStats.k),
       String(configAStats.n),
     ]);
   }
   if (configBStats != null) {
+    const ci = configBStats.ci_wilson;
+    const ciStr = ci
+      ? `${(ci[0] * 100).toFixed(1)}% – ${(ci[1] * 100).toFixed(1)}%`
+      : "N/A";
     tableRows.push([
       configBLabel,
       `${(configBStats.phat * 100).toFixed(1)}%`,
+      ciStr,
       String(configBStats.k),
       String(configBStats.n),
     ]);
@@ -525,6 +601,45 @@ export function exportReportAsPdf(
   }
   y += 4;
 
+  // —— Risk Assessment (Severity Breakdown) ——
+  if (totalFailures > 0) {
+    y = ensureSpace(doc, y, 50);
+    y = drawSectionHeader(doc, y + 2, getT("risk_assessment", isPlainLanguage));
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.textMuted);
+    doc.text(getT("risk_assessment_desc", isPlainLanguage), MARGIN, y + 4);
+    y += 10;
+
+    // Draw severity bars
+    const severityData = [
+      { label: getT("high_severity_failures", isPlainLanguage), count: highSeverityCount, color: [220, 38, 38] as [number, number, number] },
+      { label: getT("medium_severity_failures", isPlainLanguage), count: medSeverityCount, color: [251, 191, 36] as [number, number, number] },
+    ];
+    const maxSeverity = Math.max(highSeverityCount, medSeverityCount, 1);
+    const barStartX = MARGIN + 50;
+    const barWidth = 70;
+    
+    for (const { label, count, color } of severityData) {
+      doc.setTextColor(...COLORS.text);
+      doc.setFontSize(9);
+      doc.text(label, MARGIN, y + 5);
+      const w = (count / maxSeverity) * barWidth;
+      doc.setFillColor(240, 240, 240);
+      doc.rect(barStartX, y - 1, barWidth, 6, "F");
+      doc.setFillColor(...color);
+      doc.rect(barStartX, y - 1, w, 6, "F");
+      doc.setTextColor(...COLORS.textMuted);
+      doc.text(`${count} (${totalFailures > 0 ? ((count / totalFailures) * 100).toFixed(0) : 0}%)`, barStartX + barWidth + 4, y + 5);
+      y += 12;
+    }
+    
+    doc.setTextColor(...COLORS.text);
+    doc.setFontSize(8);
+    doc.text(`Total failure events: ${totalFailures}`, MARGIN, y + 4);
+    y += 10;
+  }
+  y += 4;
+
   // —— Configurations compared ——
   const configTableHeaders = [
     getT("table_parameter", isPlainLanguage),
@@ -535,13 +650,13 @@ export function exportReportAsPdf(
     [getT("label_model", isPlainLanguage), configA.model, configB.model],
     [
       getT("label_context_window", isPlainLanguage),
-      `${configA.context_window}`,
-      `${configB.context_window}`,
+      `${configA.context_window.toLocaleString()} tokens`,
+      `${configB.context_window.toLocaleString()} tokens`,
     ],
     [
       getT("label_max_output", isPlainLanguage),
-      String(configA.max_output_tokens),
-      String(configB.max_output_tokens),
+      `${configA.max_output_tokens.toLocaleString()} tokens`,
+      `${configB.max_output_tokens.toLocaleString()} tokens`,
     ],
     [
       getT("label_tools", isPlainLanguage),
@@ -553,6 +668,12 @@ export function exportReportAsPdf(
       getT("label_cost_per_1k", isPlainLanguage),
       `$${configA.cost_per_1k_tokens}`,
       `$${configB.cost_per_1k_tokens}`,
+    ],
+    [getT("label_top_k", isPlainLanguage), String(configA.top_k), String(configB.top_k)],
+    [
+      getT("label_chunk_size", isPlainLanguage),
+      `${configA.chunk_size.toLocaleString()} tokens`,
+      `${configB.chunk_size.toLocaleString()} tokens`,
     ],
   ];
   const configTableColWidths = [48, 63, 63];
@@ -636,8 +757,6 @@ export function exportReportAsPdf(
 
   // —— Failure hotspots (family × mode) ——
   if (topHotspots.length > 0) {
-    y = ensureSpace(doc, y, 35);
-    y = drawSectionHeader(doc, y + 2, getT("failure_hotspots_section", isPlainLanguage));
     const hotspotColWidths = [55, 55, 25];
     const hotspotHeaders = [
       getT("table_prompt_family", isPlainLanguage),
@@ -645,9 +764,107 @@ export function exportReportAsPdf(
       getT("count", isPlainLanguage),
     ];
     const hotspotRows = topHotspots.map((h) => [h.family, h.failure_mode, String(h.count)]);
+    // Calculate actual space needed: section header (12) + table header (8) + rows (8 each) + padding (10)
+    const hotspotTableHeight = 12 + 8 + (hotspotRows.length * 8) + 10;
+    y = ensureSpace(doc, y, hotspotTableHeight);
+    y = drawSectionHeader(doc, y + 2, getT("failure_hotspots_section", isPlainLanguage));
     y = drawTable(doc, y, hotspotHeaders, hotspotRows, hotspotColWidths);
     y += 4;
   }
+
+  // —— Failure Mode Definitions ——
+  if (failureModeDetails.length > 0) {
+    y = ensureSpace(doc, y, 30);
+    y = drawSectionHeader(doc, y + 2, getT("failure_definitions", isPlainLanguage));
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.textMuted);
+    doc.text(getT("failure_definitions_desc", isPlainLanguage), MARGIN, y + 4);
+    y += 10;
+
+    for (const mode of failureModeDetails.slice(0, 6)) {
+      y = ensureSpace(doc, y, 28);
+      
+      // Mode name with severity badge
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.text);
+      doc.text(mode.name, MARGIN, y + 4);
+      
+      // Severity badge
+      const badgeX = MARGIN + doc.getTextWidth(mode.name) + 4;
+      const badgeColor = mode.severity === "HIGH" ? [220, 38, 38] as [number, number, number] : [251, 191, 36] as [number, number, number];
+      doc.setFillColor(...badgeColor);
+      doc.roundedRect(badgeX, y - 1, 18, 6, 1, 1, "F");
+      doc.setFontSize(6);
+      doc.setTextColor(255, 255, 255);
+      doc.text(mode.severity, badgeX + 3, y + 3);
+      
+      y += 8;
+      
+      // Description
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.text);
+      const description = getFailureModeDescriptionDict(mode.key, mode.count, mode.proportion, isPlainLanguage);
+      const descLines = wrapText(doc, description, CONTENT_WIDTH - 8, 8);
+      for (const line of descLines) {
+        doc.text(line, MARGIN + 4, y + 3);
+        y += 5;
+      }
+      y += 4;
+    }
+  }
+
+  // —— Remediation Recommendations ——
+  if (failureModeDetails.length > 0) {
+    y = ensureSpace(doc, y, 30);
+    y = drawSectionHeader(doc, y + 2, getT("remediation_recommendations", isPlainLanguage));
+    doc.setFontSize(8);
+    doc.setTextColor(...COLORS.textMuted);
+    doc.text(getT("remediation_recommendations_desc", isPlainLanguage), MARGIN, y + 4);
+    y += 10;
+
+    // Show remediation for top 4 most impactful failure modes
+    const topImpact = failureModeDetails.slice(0, 4);
+    for (const mode of topImpact) {
+      y = ensureSpace(doc, y, 20);
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLORS.text);
+      doc.text(`${mode.name}:`, MARGIN, y + 4);
+      y += 7;
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLORS.text);
+      const remediation = getFailureModeRemediation(mode.key, isPlainLanguage);
+      const remLines = wrapText(doc, remediation, CONTENT_WIDTH - 12, 8);
+      for (const line of remLines) {
+        doc.text(`• ${line}`, MARGIN + 4, y + 3);
+        y += 5;
+      }
+      y += 4;
+    }
+  }
+
+  // —— Test Coverage Summary ——
+  y = ensureSpace(doc, y, 40);
+  y = drawSectionHeader(doc, y + 2, getT("test_coverage", isPlainLanguage));
+  doc.setFontSize(8);
+  doc.setTextColor(...COLORS.textMuted);
+  doc.text(getT("test_coverage_desc", isPlainLanguage), MARGIN, y + 4);
+  y += 10;
+
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.text);
+  const totalTests = (configAStats?.n ?? 0) + (configBStats?.n ?? 0);
+  doc.text(`${getT("total_tests_run", isPlainLanguage)}: ${totalTests}`, MARGIN, y + 4);
+  y += 8;
+  doc.text(`${getT("prompt_families_tested", isPlainLanguage)}: ${topPromptFamilies.length}`, MARGIN, y + 4);
+  y += 8;
+  doc.text(`${getT("failure_events_detected", isPlainLanguage)}: ${totalFailures}`, MARGIN, y + 4);
+  y += 12;
 
   // —— Footer (all pages) ——
   const totalPages = doc.getNumberOfPages();

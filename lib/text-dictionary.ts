@@ -607,6 +607,92 @@ export const TEXT_DICTIONARY = {
     technical: "Failure mode",
     plain: "Problem type",
   },
+  
+  // —— Additional PDF report sections ——
+  risk_assessment: {
+    technical: "Risk Assessment",
+    plain: "Risk Overview",
+  },
+  severity_breakdown: {
+    technical: "Severity Breakdown",
+    plain: "How Serious Were the Problems",
+  },
+  high_severity_failures: {
+    technical: "High Severity",
+    plain: "Serious",
+  },
+  medium_severity_failures: {
+    technical: "Medium Severity",
+    plain: "Moderate",
+  },
+  risk_assessment_desc: {
+    technical: "Severity classification of detected failure events during testing.",
+    plain: "How serious were the problems we found during testing.",
+  },
+  failure_definitions: {
+    technical: "Failure Mode Definitions",
+    plain: "What Each Problem Means",
+  },
+  failure_definitions_desc: {
+    technical: "Detailed explanation of each failure mode detected in this analysis.",
+    plain: "Here's what each type of problem means and why it matters.",
+  },
+  remediation_recommendations: {
+    technical: "Remediation Recommendations",
+    plain: "How to Fix These Problems",
+  },
+  remediation_recommendations_desc: {
+    technical: "Actionable steps to address the most impactful failure modes.",
+    plain: "Steps you can take to fix the problems we found.",
+  },
+  statistical_methodology: {
+    technical: "Statistical Methodology",
+    plain: "How We Calculated This",
+  },
+  methodology_explanation: {
+    technical: "Failure probabilities estimated via maximum likelihood (p̂ = k/n). Confidence intervals use Wilson score method (95%). Pairwise comparison uses Bayesian posterior probability P(p_A < p_B).",
+    plain: "We counted how many tests had problems (failure rate). The uncertainty range shows how confident we are. The comparison score shows which option is more likely to be reliable.",
+  },
+  test_coverage: {
+    technical: "Test Coverage Summary",
+    plain: "What We Tested",
+  },
+  test_coverage_desc: {
+    technical: "Overview of prompt families and test scenarios covered in this analysis.",
+    plain: "Summary of the different types of prompts we tested.",
+  },
+  table_ci_95: {
+    technical: "95% CI",
+    plain: "Uncertainty",
+  },
+  table_severity: {
+    technical: "Severity",
+    plain: "Seriousness",
+  },
+  table_description: {
+    technical: "Description",
+    plain: "What it means",
+  },
+  table_remediation: {
+    technical: "Remediation",
+    plain: "How to fix",
+  },
+  total_tests_run: {
+    technical: "Total tests run",
+    plain: "Total tests run",
+  },
+  prompt_families_tested: {
+    technical: "Prompt families tested",
+    plain: "Types of prompts tested",
+  },
+  failure_events_detected: {
+    technical: "Failure events detected",
+    plain: "Problems detected",
+  },
+  additional_config_params: {
+    technical: "Additional Configuration Parameters",
+    plain: "More Settings",
+  },
 } as const;
 
 // —— Failure mode display names (for titles/labels) ——
@@ -700,4 +786,43 @@ export function getFailureModeLabel(mode: string, isPlainLanguage: boolean): str
     .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
+}
+
+// —— Remediation recommendations for each failure mode ——
+export const FAILURE_MODE_REMEDIATION: Record<
+  string,
+  { technical: string; plain: string }
+> = {
+  context_overflow: {
+    technical: "Reduce input size via summarization, chunking, or increase context_window. Consider RAG with smaller top_k.",
+    plain: "Shorten your prompts, break them into smaller pieces, or use a model with a bigger memory limit.",
+  },
+  silent_truncation_risk: {
+    technical: "Monitor context_usage and add guardrails at 80%. Consider dynamic prompt compression.",
+    plain: "Keep an eye on how much memory is being used. Add warnings before hitting the limit.",
+  },
+  latency_breach: {
+    technical: "Use streaming responses, reduce max_output_tokens, or switch to a faster model variant.",
+    plain: "Use a faster AI model, ask for shorter responses, or enable streaming so users see results sooner.",
+  },
+  cost_runaway: {
+    technical: "Implement token budgets, use cheaper models for simple tasks, or add cost monitoring alerts.",
+    plain: "Set spending limits, use cheaper AI for simple tasks, and add alerts when costs rise.",
+  },
+  tool_timeout_risk: {
+    technical: "Add timeout handling, implement retries with backoff, or pre-validate tool availability.",
+    plain: "Add safety nets for when features take too long. Allow retries and check if features are available first.",
+  },
+  retrieval_noise_risk: {
+    technical: "Reduce top_k, improve embedding quality, or add relevance filtering post-retrieval.",
+    plain: "Limit search results, improve how documents are indexed, or filter out irrelevant results.",
+  },
+};
+
+export function getFailureModeRemediation(mode: string, isPlainLanguage: boolean): string {
+  const entry = FAILURE_MODE_REMEDIATION[mode];
+  if (entry) return isPlainLanguage ? entry.plain : entry.technical;
+  return isPlainLanguage 
+    ? "Review configuration settings for this failure type." 
+    : "Review configuration parameters related to this failure mode.";
 }

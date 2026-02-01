@@ -234,7 +234,9 @@ export default function Dashboard() {
       runMode === "simulate"
         ? runSize === "quick" ? 5000 : 20000
         : runSize === "quick" ? 30000 : 50000;
-    const timeoutMs = estimatedTimeMs * 2;
+    // Server needs extra time after probes to compute analysis/comparisons/distributions (and 6 cost-band variants)
+    const finalizingBufferMs = runSize === "quick" ? 45_000 : 120_000; // 45s quick, 2min full
+    const timeoutMs = estimatedTimeMs * 2 + finalizingBufferMs;
     const timeoutId = setTimeout(() => {
       abortController.abort();
       setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
