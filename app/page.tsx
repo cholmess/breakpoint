@@ -97,7 +97,7 @@ export default function Dashboard() {
   }, []);
 
   // Which API keys are set (for Real API mode warning)
-  const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean } | null>(null);
+  const [apiKeysCheck, setApiKeysCheck] = useState<{ openai: boolean; gemini: boolean; manus: boolean; hint?: string } | null>(null);
 
   // Refs to store abort controller and intervals for stopping simulation
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -464,7 +464,8 @@ export default function Dashboard() {
                 </div>
                 {missingKey && (
                   <p className="text-sm text-amber-600 dark:text-amber-400 mb-2 leading-relaxed">
-                    Missing API key(s) for your selected configs. Copy <code className="text-xs bg-muted px-1 rounded">.env.example</code> to <code className="text-xs bg-muted px-1 rounded">.env</code> in the project root and add the keys. See SETUP.md.
+                    Missing API key(s) for your selected configs.{" "}
+                    {apiKeysCheck?.hint ?? "Copy .env.example to .env in the project root and add the keys. See SETUP.md."}
                   </p>
                 )}
                 <span id="tour-run-simulation">
