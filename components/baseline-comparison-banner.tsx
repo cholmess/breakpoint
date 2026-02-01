@@ -2,12 +2,15 @@
 
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import { useText } from "@/hooks/use-text";
 import type { AnalysisData, ComparisonsData, Config, Baseline } from "@/types/dashboard";
 
 function getComparisonSummary(
   comparisons: ComparisonsData,
   configA: Config,
-  configB: Config
+  configB: Config,
+  configALabel: string,
+  configBLabel: string
 ): { label: string; pct: number } | null {
   const c = comparisons.comparisons.find(
     (x) =>
@@ -17,7 +20,7 @@ function getComparisonSummary(
   if (!c) return null;
   const pA = c.config_a === configA.id ? c.p_a_safer : 1 - c.p_a_safer;
   const pct = Math.round(pA * 100);
-  const label = pA > 0.5 ? "Config A" : "Config B";
+  const label = pA > 0.5 ? configALabel : configBLabel;
   const safePct = pA > 0.5 ? pct : 100 - pct;
   return { label, pct: safePct };
 }
@@ -44,40 +47,46 @@ export function BaselineComparisonBanner({
   baseline,
   onClearBaseline,
 }: BaselineComparisonBannerProps) {
+  const { t } = useText();
   const currentSummary = getComparisonSummary(
     current.comparisons,
     current.configA,
-    current.configB
+    current.configB,
+    t("config_a"),
+    t("config_b")
   );
   const baselineSummary = getComparisonSummary(
     baseline.comparisons,
     baseline.configA,
-    baseline.configB
+    baseline.configB,
+    t("config_a"),
+    t("config_b")
   );
 
   const currentAvg = getAvgFailureRate(current.analysis, current.configA, current.configB);
   const baselineAvg = getAvgFailureRate(baseline.analysis, baseline.configA, baseline.configB);
+
   const rateDeltaPct = (baselineAvg - currentAvg) * 100;
   const improved = rateDeltaPct > 0;
   const rateText =
     Math.abs(rateDeltaPct) < 0.5
       ? null
       : improved
-        ? `Failure rate improved by ${rateDeltaPct.toFixed(1)}% vs baseline.`
-        : `Failure rate increased by ${(-rateDeltaPct).toFixed(1)}% vs baseline.`;
+        ? t("failure_rate_improved", { pct: rateDeltaPct.toFixed(1) })
+        : t("failure_rate_increased", { pct: (-rateDeltaPct).toFixed(1) });
 
   const savedAt = baseline.savedAt ? new Date(baseline.savedAt).toLocaleDateString(undefined, { dateStyle: "short" }) : "";
 
   return (
     <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-        <span className="font-medium text-foreground">Compare to baseline</span>
+        <span className="font-medium text-foreground">{t("compare_to_baseline")}</span>
         {currentSummary && baselineSummary && (
           <span className="text-muted-foreground">
-            Current run: <strong>{currentSummary.label} {currentSummary.pct}% safer</strong>
+            Current run: <strong>{currentSummary.label} {currentSummary.pct}% {t("safer")}</strong>
             {" · "}
-            Baseline: <strong>{baselineSummary.label} {baselineSummary.pct}% safer</strong>
-            {savedAt && ` (saved ${savedAt})`}
+            Baseline: <strong>{baselineSummary.label} {baselineSummary.pct}% {t("safer")}</strong>
+            {savedAt && ` (${t("saved")} ${savedAt})`}
           </span>
         )}
         {rateText && (
@@ -93,7 +102,7 @@ export function BaselineComparisonBanner({
         onClick={onClearBaseline}
       >
         <X className="h-4 w-4 mr-1" />
-        Clear baseline
+        {t("clear_baseline")}
       </Button>
     </div>
   );

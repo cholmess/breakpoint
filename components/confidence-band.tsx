@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
+import { useText } from "@/hooks/use-text";
 import type { AnalysisData } from "@/types/dashboard";
 
 interface ConfidenceBandProps {
@@ -19,6 +20,7 @@ interface ConfidenceBandProps {
 }
 
 export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
+  const { t } = useText();
   const configs = Object.values(analysisData.configs);
 
   if (configs.length === 0) {
@@ -26,15 +28,15 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
       <Card className="py-3">
         <CardHeader className="py-2 px-4">
           <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            Failure Rate Comparison
+            {t("failure_rate_comparison")}
           </CardTitle>
           <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed">
-            Shows how often each configuration fails, with uncertainty ranges. Lower is better.
+            {t("failure_rate_chart_desc")}
           </p>
         </CardHeader>
         <CardContent className="p-4">
           <div className="text-xs text-muted-foreground text-center py-4">
-            No analysis data available
+            {t("no_analysis_data")}
           </div>
         </CardContent>
       </Card>
@@ -68,15 +70,15 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
       const data = payload[0].payload;
       return (
         <div className="bg-card border border-border rounded-md p-3 shadow-lg">
-          <p className="text-base font-semibold mb-2 leading-relaxed">Config {data.config}</p>
+          <p className="text-base font-semibold mb-2 leading-relaxed">{t("config_label")} {data.config}</p>
           <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
-            Failure Rate: <span className="font-mono font-semibold text-foreground">{data.phat.toFixed(2)}%</span>
+            {t("tooltip_failure_rate")} <span className="font-mono font-semibold text-foreground">{data.phat.toFixed(2)}%</span>
           </p>
           <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
-            CI: <span className="font-mono text-foreground">{data.lower.toFixed(2)}% - {data.upper.toFixed(2)}%</span>
+            {t("tooltip_ci")} <span className="font-mono text-foreground">{data.lower.toFixed(2)}% - {data.upper.toFixed(2)}%</span>
           </p>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Events: <span className="font-mono text-foreground">{data.k}/{data.n}</span>
+            {t("tooltip_events")} <span className="font-mono text-foreground">{data.k}/{data.n}</span>
           </p>
         </div>
       );
@@ -88,7 +90,7 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
     <Card className="py-3">
       <CardHeader className="py-2 px-4">
         <CardTitle className="text-lg font-bold uppercase tracking-wider neon-text-subtle leading-tight">
-          Failure Rate with Confidence Intervals
+          {t("failure_rate_with_ci")}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-2">
@@ -115,7 +117,7 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
                 width={45}
                 domain={yDomain}
                 label={{
-                  value: "Failure Rate (%)",
+                  value: t("failure_rate_pct"),
                   angle: -90,
                   position: "insideLeft",
                   style: { fontSize: "12px", textAnchor: "middle" },
@@ -158,11 +160,11 @@ export function ConfidenceBand({ analysisData }: ConfidenceBandProps) {
         <div className="mt-2 flex items-center justify-center gap-4 text-[9px] text-muted-foreground">
           <div className="flex items-center gap-1">
             <div className="w-2 h-0.5 bg-primary" />
-            <span>Failure Rate (p̂)</span>
+            <span>{t("failure_rate_phat")}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-2 h-2 border-t border-b border-muted-foreground" />
-            <span>95% CI</span>
+            <span>{t("ci_95")}</span>
           </div>
         </div>
       </CardContent>

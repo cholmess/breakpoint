@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TokenStepper, roundToTokenStep } from "@/components/ui/token-stepper";
+import { useText } from "@/hooks/use-text";
 import type { Config } from "@/types/dashboard";
 
 interface ConfigFormProps {
@@ -21,6 +22,7 @@ interface ModelOption {
 }
 
 export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
+  const { t } = useText();
   const [modelOptions, setModelOptions] = useState<ModelOption[]>([]);
 
   useEffect(() => {
@@ -45,7 +47,7 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Model</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_model")}</Label>
           <Select
             value={config.model}
             onValueChange={(value) => onChange({ ...config, model: value })}
@@ -76,7 +78,7 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Temperature</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_temperature")}</Label>
           <Slider
             value={[config.temperature]}
             onValueChange={([v]) => onChange({ ...config, temperature: v })}
@@ -91,7 +93,7 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Top-K</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_top_k")}</Label>
           <Slider
             value={[config.top_k]}
             onValueChange={([v]) => onChange({ ...config, top_k: v })}
@@ -106,7 +108,7 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Context Window</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_context_window")}</Label>
           <TokenStepper
             value={roundToTokenStep(config.context_window)}
             onChange={(v) => onChange({ ...config, context_window: v })}
@@ -118,7 +120,7 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Chunk Size</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_chunk_size")}</Label>
           <TokenStepper
             value={roundToTokenStep(config.chunk_size)}
             onChange={(v) => onChange({ ...config, chunk_size: v })}
@@ -130,7 +132,7 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Max Output</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_max_output")}</Label>
           <TokenStepper
             value={roundToTokenStep(config.max_output_tokens)}
             onChange={(v) => onChange({ ...config, max_output_tokens: v })}
@@ -142,20 +144,20 @@ export function ConfigForm({ config, onChange, label }: ConfigFormProps) {
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Tools</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_tools")}</Label>
           <div className="flex-1 flex items-center gap-2">
             <Switch
               checked={config.tools_enabled}
               onCheckedChange={(v) => onChange({ ...config, tools_enabled: v })}
             />
             <span className="text-xs text-muted-foreground">
-              {config.tools_enabled ? "Enabled" : "Disabled"}
+              {config.tools_enabled ? t("tools_enabled") : t("tools_disabled")}
             </span>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <Label className="text-xs shrink-0 w-24">Cost/1K</Label>
+          <Label className="text-xs shrink-0 w-24">{t("label_cost_per_1k")}</Label>
           <div className="flex-1 flex items-center gap-1">
             <span className="text-xs text-muted-foreground">$</span>
             <Input
