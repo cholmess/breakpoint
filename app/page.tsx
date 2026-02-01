@@ -222,33 +222,11 @@ export default function Dashboard() {
     const probeCount = runSize === "quick" ? 40 : 400;
     const estimatedTimeMs =
       runMode === "simulate"
-        ? runSize === "quick"
-          ? 5000   // 40 probes batched ~5s
-          : 20000  // 400 probes ~20s
-        : runSize === "quick"
-          ? 30000  // 40 probes real ~30s with 20 concurrent
-          : 50000; // 400 probes real ~50s with increased concurrency
-    const progressCap = 95; // Allow progress up to 95%, then wait for completion
-    const updateIntervalMs = 600; // Update every 600ms
-    const incrementsToReachCap = (estimatedTimeMs / updateIntervalMs) * (progressCap / 100);
-    const incrementPerUpdate = progressCap / incrementsToReachCap;
-    
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        // Increment progress up to cap, then wait for actual completion
-        if (prev < progressCap) {
-          const next = prev + incrementPerUpdate;
-          // Round to 1 decimal place to avoid floating-point precision issues
-          const rounded = Math.round(next * 10) / 10;
-          return rounded > progressCap ? progressCap : rounded;
-        }
-        return prev;
-      });
-    }, updateIntervalMs);
-    progressIntervalRef.current = progressInterval;
-    
-    // Set timeout with buffer (2x estimated time: 40s for simulate, 7min for real)
-    const timeoutMs = estimatedTimeMs * 2;
+        ? runSize === "quick" ? 5000 : 20000
+        : runSize === "quick" ? 30000 : 50000;
+    // Server needs extra time after probes to compute analysis/comparisons/distributions (and 6 cost-band variants)
+    const finalizingBufferMs = runSize === "quick" ? 45_000 : 120_000; // 45s quick, 2min full
+    const timeoutMs = estimatedTimeMs * 2 + finalizingBufferMs;
     const timeoutId = setTimeout(() => {
       clearInterval(progressInterval);
       setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
