@@ -228,15 +228,26 @@ export default function Dashboard() {
     const finalizingBufferMs = runSize === "quick" ? 45_000 : 120_000; // 45s quick, 2min full
     const timeoutMs = estimatedTimeMs * 2 + finalizingBufferMs;
     const timeoutId = setTimeout(() => {
-      clearInterval(progressInterval);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       setError(`Request timed out after ${Math.floor(timeoutMs / 1000)}s. Try reducing the number of prompts or check your API keys.`);
       setStatus("idle");
       setProgress(0);
       abortControllerRef.current = null;
-      progressIntervalRef.current = null;
       timeoutIdRef.current = null;
     }, timeoutMs);
     timeoutIdRef.current = timeoutId;
+
+    // Client-side progress simulation: move from 0% toward 95% over estimated time
+    const progressCap = 95;
+    const startTime = Date.now();
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(progressCap, (elapsed / timeoutMs) * progressCap);
+      setProgress(pct);
+    }, 300);
     
     try {
       const response = await fetch("/api/run-simulation", {
@@ -254,9 +265,11 @@ export default function Dashboard() {
       });
       
       clearTimeout(timeoutId);
-      clearInterval(progressInterval);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       abortControllerRef.current = null;
-      progressIntervalRef.current = null;
       timeoutIdRef.current = null;
       setProgress(100);
 
@@ -302,16 +315,23 @@ export default function Dashboard() {
     } catch (err) {
       // Don't show error if it was aborted by user
       if (err instanceof Error && err.name === "AbortError") {
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+          progressIntervalRef.current = null;
+        }
         setStatus("idle");
         setProgress(0);
         return;
       }
       
       clearTimeout(timeoutId);
-      clearInterval(progressInterval);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       abortControllerRef.current = null;
-      progressIntervalRef.current = null;
       timeoutIdRef.current = null;
+      setProgress(0);
       console.error("Simulation failed:", err);
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
