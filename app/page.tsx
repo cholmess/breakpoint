@@ -30,6 +30,7 @@ import { startDashboardTour } from "@/lib/dashboard-tour";
 import { saveBaseline, loadBaseline, clearBaseline } from "@/lib/baseline";
 import { BaselineComparisonBanner } from "@/components/baseline-comparison-banner";
 import type { AnalysisData, ComparisonsData, DistributionsData, Config, Timeline, Baseline, CostBand, CostMultiplierKey, LatencyMultiplierKey } from "@/types/dashboard";
+import type { PromptRecord } from "@/src/types";
 
 // Default configs matching the schema
 const defaultConfigA: Config = {
@@ -64,6 +65,12 @@ export default function Dashboard() {
   const [runMode, setRunMode] = useState<"simulate" | "real">("simulate");
   const [runSize, setRunSize] = useState<"quick" | "full">("quick");
   const [status, setStatus] = useState<"idle" | "running" | "success" | "failure">("idle");
+  
+  // Real Use Case Simulation mode state
+  const [simulationMode, setSimulationMode] = useState<"standard" | "real-use-case">("standard");
+  const [useCaseDescription, setUseCaseDescription] = useState<string>("");
+  const [generatedPrompts, setGeneratedPrompts] = useState<PromptRecord[] | null>(null);
+  const [generatingPrompts, setGeneratingPrompts] = useState(false);
   
   // Data from API
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
@@ -208,6 +215,45 @@ export default function Dashboard() {
     setError("Simulation stopped by user");
   }, []);
 
+  const generatePromptsHandler = useCallback(async () => {
+    setGeneratingPrompts(true);
+    setError(null);
+    
+    try {
+      const count = runSize === "quick" ? 20 : 200;
+      const response = await fetch("/api/generate-prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          useCase: useCaseDescription.trim(),
+          count,
+          options: {
+            model: "gpt-4o",
+            complexity: runSize === "quick" ? "moderate" : "complex",
+            distribution: {
+              short_ratio: 0.3,
+              tool_heavy_ratio: 0.4,
+              doc_grounded_ratio: 0.5,
+            },
+          },
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate prompts");
+      }
+      
+      setGeneratedPrompts(data.prompts);
+    } catch (err) {
+      console.error("Prompt generation failed:", err);
+      setError(err instanceof Error ? err.message : "Failed to generate prompts");
+    } finally {
+      setGeneratingPrompts(false);
+    }
+  }, [useCaseDescription, runSize]);
+
   const runSimulation = useCallback(async () => {
     setStatus("running");
     setError(null);
@@ -260,6 +306,9 @@ export default function Dashboard() {
           runSize,
           seed: 42,
           mode: runMode,
+          ...(simulationMode === "real-use-case" && generatedPrompts
+            ? { customPrompts: generatedPrompts }
+            : {}),
         }),
         signal: abortController.signal,
       });
@@ -336,7 +385,7 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : "Simulation failed");
       setStatus("failure");
     }
-  }, [configA, configB, runMode, runSize]);
+  }, [configA, configB, runMode, runSize, simulationMode, generatedPrompts]);
 
   return (
     <div className="min-h-screen gradient-mesh">
@@ -470,7 +519,7 @@ export default function Dashboard() {
                 <span id="tour-run-simulation">
                   <Button
                     onClick={status === "running" ? stopSimulation : runSimulation}
-                    disabled={Boolean(missingKey)}
+                    disabled={Boolean(missingKey) || (simulationMode === "real-use-case" && !generatedPrompts)}
                     className={cn(
                       "w-full text-white",
                       status === "running"
@@ -491,6 +540,78 @@ export default function Dashboard() {
                     )}
                   </Button>
                 </span>
+              </CardContent>
+            </Card>
+            {/* Real Use Case Simulation Mode */}
+            <Card className="glass-card">
+              <CardContent className="p-3">
+                <div className="text-sm font-mono uppercase tracking-wider text-muted-foreground mb-2 leading-relaxed">
+                  Simulation Mode
+                </div>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimulationMode("standard");
+                      setGeneratedPrompts(null);
+                    }}
+                    className={cn(
+                      "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      simulationMode === "standard"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSimulationMode("real-use-case")}
+                    className={cn(
+                      "flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border leading-relaxed",
+                      simulationMode === "real-use-case"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-card hover:bg-secondary border-border text-foreground"
+                    )}
+                  >
+                    Real Use Case
+                  </button>
+                </div>
+                
+                {simulationMode === "real-use-case" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block leading-relaxed">
+                        Describe your use case
+                      </label>
+                      <textarea
+                        value={useCaseDescription}
+                        onChange={(e) => setUseCaseDescription(e.target.value)}
+                        placeholder="e.g., Teaching app focusing on quantum physics and gravitational forces"
+                        className="w-full px-3 py-2 rounded-md border border-border bg-card text-foreground text-sm min-h-[80px] resize-y leading-relaxed"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={generatePromptsHandler}
+                      disabled={!useCaseDescription.trim() || generatingPrompts}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      {generatingPrompts ? (
+                        <>Generating...</>
+                      ) : (
+                        <>Generate {runSize === "quick" ? "20" : "200"} Prompts</>
+                      )}
+                    </Button>
+                    
+                    {generatedPrompts && (
+                      <div className="text-sm text-muted-foreground leading-relaxed">
+                        ✓ Generated {generatedPrompts.length} prompts
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
             <WhatIfPromptChecker
